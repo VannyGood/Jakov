@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
@@ -13,7 +14,9 @@ from jakov.engine.emoji_render import TOKEN_RE
 from jakov.engine.variables import BUILTIN_NAMES, placeholders
 
 QuestionKind = Literal["text", "choice", "datetime"]
-PARTS = ("hooks", "bodies", "ctas")
+SECTIONS = ("headline", "intro", "body", "points", "closing", "cta", "action", "ps")
+REQUIRED_SECTIONS = ("headline", "intro", "body", "closing", "cta")
+SECTION_RE = re.compile(r"@([a-z]+)")
 
 
 class CatalogError(ValueError):
@@ -39,9 +42,12 @@ class Question:
 
 @dataclass(frozen=True, slots=True)
 class ToneParts:
-    hooks: tuple[str, ...]
-    bodies: tuple[str, ...]
-    ctas: tuple[str, ...]
+    """Lines per section for one tone; `points` falls back to the type's points."""
+
+    sections: dict[str, tuple[str, ...]]
+
+    def get(self, name: str) -> tuple[str, ...]:
+        return self.sections.get(name, ())
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,6 +57,8 @@ class PostType:
     palette: tuple[str, ...]
     questions: tuple[Question, ...]
     tones: dict[str, ToneParts]
+    layouts: tuple[str, ...] = ()
+    points: tuple[str, ...] = ()
 
     @property
     def field_names(self) -> set[str]:
@@ -62,6 +70,16 @@ class PostType:
 
     def question(self, key: str) -> Question:
         return next(q for q in self.questions if q.key == key)
+
+    def section(self, tone: str, name: str) -> tuple[str, ...]:
+        lines = self.tones[tone].get(name)
+        if lines:
+            return lines
+        if name == "points":
+            return self.points
+        if name == "action":
+            return self.tones[tone].get("cta")
+        return ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -94,6 +112,16 @@ class Catalog:
         return types
 
     @cached_property
+    def layouts(self) -> dict[str, str]:
+        raw = self._yaml(self.data_dir / "layouts.yaml")
+        layouts = {str(k): str(v).strip("\n") for k, v in raw.items()}
+        for name, text in layouts.items():
+            unknown = set(SECTION_RE.findall(text)) - set(SECTIONS)
+            if unknown:
+                raise CatalogError(f"layouts.yaml/{name}: unknown sections {unknown}")
+        return layouts
+
+    @cached_property
     def pools(self) -> dict[str, list[str]]:
         pools = {}
         for path in sorted((self.data_dir / "pools").glob("*.yaml")):
@@ -104,8 +132,28 @@ class Catalog:
         return pools
 
     @cached_property
+    def _starter(self) -> dict[str, list[str]]:
+        raw = self._yaml(self.data_dir / "starter_packs.yaml")
+        return {k: [str(p) for p in raw.get(k) or []] for k in ("showcase", "base")}
+
+    @cached_property
     def starter_packs(self) -> list[str]:
-        return [str(p) for p in self._yaml(self.data_dir / "starter_packs.yaml")]
+        """All packs imported automatically: base packs first."""
+        return self._starter["base"] + self._starter["showcase"]
+
+    @cached_property
+    def base_packs(self) -> list[str]:
+        """Packs that mirror standard emoji: menu fallback, last resort in posts."""
+        return self._starter["base"]
+
+    @cached_property
+    def ui_icons(self) -> dict[str, str]:
+        """Curated menu icons: UI emoji -> custom_emoji_id."""
+        raw = self._yaml(self.data_dir / "ui_icons.yaml").get("icons") or {}
+        icons = {str(k): str(v["id"]) for k, v in raw.items()}
+        if not all(i.isdigit() for i in icons.values()):
+            raise CatalogError("ui_icons.yaml: every id must be a numeric custom_emoji_id")
+        return icons
 
     def _load_type(self, path: Path) -> PostType:
         raw = self._yaml(path)
@@ -119,11 +167,15 @@ class Catalog:
             for q in raw["questions"]
         )
         tones = {
-            tone: ToneParts(*(tuple(parts[p]) for p in PARTS))
+            tone: ToneParts({name: tuple(str(x) for x in lines)
+                             for name, lines in (parts or {}).items()})
             for tone, parts in raw["tones"].items()
         }
-        post_type = PostType(raw["type"], raw["title"], tuple(raw.get("palette", ())),
-                             questions, tones)
+        post_type = PostType(
+            raw["type"], raw["title"], tuple(raw.get("palette", ())), questions, tones,
+            layouts=tuple(raw.get("layouts") or self.layouts),
+            points=tuple(str(p) for p in raw.get("points") or ()),
+        )
         self._validate(post_type, path.name)
         return post_type
 
@@ -131,13 +183,19 @@ class Catalog:
         missing = set(self.tones) - set(post_type.tones)
         if missing:
             raise CatalogError(f"{name}: missing tones {sorted(missing)}")
+        unknown_layouts = set(post_type.layouts) - set(self.layouts)
+        if unknown_layouts:
+            raise CatalogError(f"{name}: unknown layouts {sorted(unknown_layouts)}")
         allowed = post_type.field_names | BUILTIN_NAMES
         for tone, parts in post_type.tones.items():
-            for part in PARTS:
-                lines = getattr(parts, part)
-                if not lines:
-                    raise CatalogError(f"{name}/{tone}: no {part}")
-                for line in lines:
+            extra = set(parts.sections) - set(SECTIONS)
+            if extra:
+                raise CatalogError(f"{name}/{tone}: unknown sections {sorted(extra)}")
+            for section in REQUIRED_SECTIONS:
+                if not parts.get(section):
+                    raise CatalogError(f"{name}/{tone}: no {section} lines")
+            for section in SECTIONS:
+                for line in post_type.section(tone, section):
                     unknown = placeholders(line) - allowed - {"emoji"}
                     if unknown:
                         raise CatalogError(f"{name}/{tone}: unknown placeholders {unknown}")

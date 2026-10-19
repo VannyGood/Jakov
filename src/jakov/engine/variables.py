@@ -7,13 +7,44 @@ import re
 from collections.abc import Mapping
 from datetime import datetime
 
-PLACEHOLDER_RE = re.compile(r"\{([a-z][a-z0-9_]*)\}")
+# {name} or {name.filter}: filters are upper, lower, title, a (adds "a"/"an").
+PLACEHOLDER_RE = re.compile(r"\{([a-z][a-z0-9_]*)(?:\.(upper|lower|title|a))?\}")
+_AN_EXCEPTIONS = ("hour", "honest", "honor", "honour", "heir")
+_A_EXCEPTIONS = ("uni", "use", "user", "usu", "eu", "one", "once", "ur")
 OPTIONAL_RE = re.compile(r"\[\[(.*?)\]\]", re.DOTALL)
 _DROPPED = "\x00"
 
 
 def placeholders(text: str) -> set[str]:
-    return set(PLACEHOLDER_RE.findall(text))
+    return {m.group(1) for m in PLACEHOLDER_RE.finditer(text)}
+
+
+def with_article(value: str) -> str:
+    """'apple' -> 'an apple', 'Air Max' -> 'an Air Max', 'user guide' -> 'a user guide'."""
+    word = value.strip().lower()
+    if not word:
+        return value
+    if word.startswith(_AN_EXCEPTIONS):
+        article = "an"
+    elif word.startswith(_A_EXCEPTIONS):
+        article = "a"
+    else:
+        article = "an" if word[0] in "aeiou" else "a"
+    return f"{article} {value.strip()}"
+
+
+def apply_filter(value: str, name: str | None) -> str:
+    if name == "upper":
+        return value.upper()
+    if name == "lower":
+        return value.lower()
+    if name == "title":
+        # Keep words that already have capitals (iPhone, USDT) as written.
+        return " ".join(w if any(c.isupper() for c in w) else w.capitalize()
+                        for w in value.split(" "))
+    if name == "a":
+        return with_article(value)
+    return value
 
 
 def drop_empty_optionals(text: str, values: Mapping[str, str], known: set[str]) -> str:
@@ -44,7 +75,7 @@ def fill(text: str, values: Mapping[str, str], known: set[str], *, escape: bool 
         name = match.group(1)
         if name not in known:
             return match.group(0)
-        value = values.get(name, "")
+        value = apply_filter(values.get(name, ""), match.group(2))
         return html.escape(value, quote=False) if escape else value
 
     return PLACEHOLDER_RE.sub(sub, text)

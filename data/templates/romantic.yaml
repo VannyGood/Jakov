@@ -1,70 +1,114 @@
 type: romantic
 title: "💘 Romantic"
 palette: [love, rose, sparkles, kiss]
+layouts: [classic, story, punchy, signature]
 questions:
   - key: for
     prompt: "💘 Who is it for? (a name, <i>my love</i>, <i>you</i>…)"
     required: true
-    max_len: 60
+    max_len: 40
   - key: mood
     prompt: "💞 Pick the mood:"
     kind: choice
     required: true
     options:
       - {value: sweet, label: "🥰 Sweet", palette: [love, cute, sparkles]}
-      - {value: passionate, label: "❤‍🔥 Passionate", palette: [heart_fire, fire, kiss]}
+      - {value: passionate, label: "❤️‍🔥 Passionate", palette: [heart_fire, fire, kiss]}
       - {value: missing, label: "🥺 Missing you", palette: [sad, love, rose]}
       - {value: celebrate, label: "🎉 Anniversary", palette: [party, love, gift]}
 tones:
   hype:
-    hooks:
-      - "{emoji} <b>{for}</b>, {you are EVERYTHING|you light up my world|you're my favourite person ever}! {emoji}"
-      - "{emoji:heart_fire} <b>{Shout out to|All my love to|This one's for} {for}</b>! {emoji:heart_fire}"
-      - "{emoji:love} <b>{Breaking news|Official announcement|Big news}:</b> I'm {crazy about|obsessed with|madly in love with} <b>{for}</b>! {emoji}"
-    bodies:
-      - "{Every day with you feels like a win|You make every day brighter|My heart does backflips when I see you} {emoji}"
-      - "{You're my favourite notification|You're the best thing that ever happened to me|Nobody compares to you} {emoji:sparkles}"
-      - "{I'd choose you|I'd pick you|It's you} {every single time|over and over again|in every universe} {emoji:love}"
-    ctas:
-      - "{Forever yours|Always yours|Yours, now and always} {emoji:kiss}"
-      - "{Love you to the moon and back|Love you more than words can say|Love you, always} {emoji}"
-      - "{emoji:rose} {Today|Tonight|Always} is about <b>{for}</b> {emoji:love}"
+    headline:
+      - "{emoji} <b>{for}, {you are EVERYTHING|you light up my whole world|you're my favourite person ever}!</b> {emoji}"
+      - "{emoji:heart_fire} <b>{Shout-out to|All my love to|This one's for} {for}!</b>"
+      - "{emoji:love} <b>{Breaking news|Official announcement|Big news}: I'm {crazy about|obsessed with|madly in love with} {for}!</b>"
+      - "{emoji:sparkles} <b>{for.upper}</b> {emoji:love}"
+    intro:
+      - "{Every day with you feels like winning the lottery|You make every day brighter|My heart does backflips when I see you}, <b>{for}</b>."
+      - "{I could talk about you all day|I tell everyone about you|I still can't believe my luck}, <b>{for}</b>, {and today I'm telling the whole world|so here it is, publicly|and I'm not even sorry}."
+      - "<b>{for}</b>, {you walked into my life and turned the volume up|you're the best thing that ever happened to me|you make ordinary days feel like holidays}."
+    body:
+      - "{You're my favourite notification|Nobody makes me laugh like you do|Nobody compares to you}, {and I'd choose you every single time|in every universe|over and over again}. {emoji}"
+      - "{The way you smile|The way you laugh|The way you look at me} {still gets me every time|is my favourite thing in the world|makes everything better}. {emoji:sparkles}"
+      - "{With you, everything is an adventure|With you, even Mondays are good|With you, I'm the best version of me}. {emoji:love}"
+    closing:
+      - "{You + me = forever|You are my favourite hello and my hardest goodbye}."
+      - "{Home is wherever you are|Lucky doesn't even begin to describe it}."
+    action:
+      - "{Forever yours|Always yours}. {emoji:kiss}"
+      - "{Love you to the moon and back|Love you, always}. {emoji}"
+    cta:
+      - "{Forever yours|Always yours|Yours, now and always}. {emoji:kiss}"
+      - "{Love you to the moon and back|Love you more than words can say|Love you, always}. {emoji}"
+      - "{emoji:rose} {Today|Tonight|Always} is about <b>{for}</b>. {emoji:love}"
+    ps:
+      - "P.S. {You're stuck with me. No refunds|I'd still choose you. Every time}. {emoji:kiss}"
   chill:
-    hooks:
-      - "{emoji} {Just a little note|A small reminder|Quiet thought} for <b>{for}</b>"
-      - "{emoji:sparkles} <b>{for}</b>,"
-      - "{emoji:rose} {Thinking of you|Thinking about you|You crossed my mind}, <b>{for}</b>"
-    bodies:
-      - "{You make ordinary moments feel special|Being with you feels like home|Everything is calmer with you} {emoji}"
-      - "{I hope you know how much you mean to me|You mean more to me than you know|Grateful for you, every day} {emoji:love}"
-      - "{Coffee tastes better|Sunsets look better|Songs sound better} {with you around|when you're here} {emoji}"
-    ctas:
-      - "{Always|Love|With love}, me {emoji}"
-      - "{Have a beautiful day|Sleep sweet|Talk soon} {emoji:sparkles}"
+    headline:
+      - "{emoji} <b>{for}</b>,"
+      - "{emoji:sparkles} <b>{A little note for|Just for|Thinking of} {for}</b>"
+      - "{emoji:rose} <b>{for}</b> {emoji}"
+    intro:
+      - "{You make ordinary moments feel special|Being with you feels like home|Everything is calmer with you}."
+      - "{I don't say it often enough|I just wanted to remind you|Quiet reminder}: {you mean the world to me|I'm grateful for you, every day|you're my favourite person}."
+      - "{Coffee tastes better|Sunsets look better|Songs sound better} {with you around|when you're here|because of you}."
+    body:
+      - "{Thank you for the little things|Thank you for being you|Thank you for your patience and your kindness}: {they never go unnoticed|they mean more than you know|they make my days}. {emoji}"
+      - "{Some days are long|Life gets busy}, but {you're the best part of every one of them|you always make it feel easy|you're always the calm in it}. {emoji:sparkles}"
+      - "{I love our slow mornings|I love our late-night talks|I love our quiet moments} {the most|more than anything|and I hope we never lose them}. {emoji:love}"
+    closing:
+      - "{The best thing to hold onto in life is each other|You are my calm}."
+      - "{Simple moments, endless love|Here's to us, quietly and always}."
+    action:
+      - "{Always|With love}, me {emoji}"
+      - "{emoji:love}"
+    cta:
+      - "{Always|With love}, me {emoji}"
+      - "{Have a beautiful day|Sleep sweet|See you soon}, <b>{for}</b>. {emoji:sparkles}"
       - "{emoji:love}"
   funny:
-    hooks:
-      - "{emoji:laugh} <b>{for}</b>, {you've been officially|you are hereby|congratulations, you've been} {stuck with me|adopted by me|chosen} {forever|for life}"
-      - "{emoji:eyes} {Roses are red, violets are blue|Plot twist|Fun fact}…"
+    headline:
+      - "{emoji:laugh} <b>{for}, {you've officially been|you are hereby|congratulations, you've been} {adopted by me|chosen|stuck with me} {forever|for life}</b>"
+      - "{emoji:eyes} <b>{Roses are red, violets are blue|Plot twist|Fun fact}…</b>"
       - "{emoji:cat} <b>{for}</b>, {you're my favourite human|I like you more than pizza|you're my emergency contact AND my snack buddy}"
-    bodies:
-      - "{I love you more than my phone|You're the reason I check my phone|I'd share my fries with you (that's huge)} {emoji:laugh}"
-      - "{Roses are red, violets are blue, I'm bad at poems but I love you|You stole my heart, but I'll let you keep it|You're weird, I'm weird, it's perfect} {emoji}"
-      - "{Thanks for laughing at my terrible jokes|Thanks for tolerating me|You make my bad days less bad} {emoji:laugh}"
-    ctas:
+    intro:
+      - "{I love you more than my phone|You're the reason I check my phone|I'd share my fries with you (that's huge)}, <b>{for}</b>."
+      - "{Roses are red, violets are blue, I'm bad at poems, but I love <b>{for}</b>|You stole my heart, but I'll let you keep it|You're weird, I'm weird, it's perfect}."
+      - "<b>{for}</b>, {thanks for laughing at my terrible jokes|thanks for tolerating me|thanks for being my favourite distraction}."
+    body:
+      - "{You make my bad days less bad|You make my good days ridiculous|You make everything 10% more chaotic and 100% better}. {emoji:laugh}"
+      - "{I'd fight a goose for you|I'd give you the last slice of pizza|I'd let you choose the movie}. {That's love|Think about that|Romance isn't dead}. {emoji:devil}"
+      - "{Life with you is a sitcom|Every day with you is a comedy special} and {I'd binge every episode|I want all the seasons|I'm a fan}. {emoji:sparkles}"
+    closing:
+      - "{Love is sharing your snacks|Together we are one fully functional adult}."
+      - "{You're my favourite notification and my favourite chaos|Soulmates, partners in crime}."
+    action:
+      - "{No refunds|No take-backs}. {emoji:kiss}"
+      - "{Love you, weirdo|Stay cute}. {emoji}"
+    cta:
       - "{No refunds|No take-backs|Terms and conditions apply}. {emoji:kiss}"
-      - "{Love you, weirdo|Love you, dork|Stay cute} {emoji}"
-      - "{emoji:devil} {Now feed me|Now kiss me|Now admit I'm your favourite}"
+      - "{Love you, weirdo|Love you, dork|Stay cute}. {emoji}"
+      - "{emoji:devil} {Now feed me|Now kiss me|Now admit I'm your favourite}."
   serious:
-    hooks:
+    headline:
       - "{emoji:rose} <b>To {for}</b>"
       - "{emoji} <b>{for}</b>,"
-      - "{emoji:love} {A message|Words} for <b>{for}</b>"
-    bodies:
-      - "{Thank you for being there through everything|Thank you for your patience, your kindness and your love|You have made my life better in every way} {emoji}"
-      - "{I don't say it enough, but you mean the world to me|What we have is rare and I treasure it|I am grateful for every moment we share}."
-      - "{You are my partner, my friend and my home|My love for you grows every day|I promise to always stand by you} {emoji}"
-    ctas:
-      - "{With all my love|Yours, always|Forever grateful} {emoji:love}"
+      - "{emoji:love} <b>{A message for|Words for|For} {for}</b>"
+    intro:
+      - "{Thank you for being there through everything|Thank you for your patience, your kindness and your love|You have made my life better in every way}."
+      - "{I don't say it enough, but you mean the world to me|What we have is rare, and I treasure it|I am grateful for every moment we share}."
+      - "{You are my partner, my friend and my home|My love for you grows every day|You are the best decision I ever made}."
+    body:
+      - "{I promise to always stand by you|I promise to keep choosing you|I promise to keep making you smile}, {in good times and difficult ones|today and every day after|whatever comes our way}. {emoji}"
+      - "{Your strength inspires me|Your kindness humbles me|Your love steadies me}, and {I am grateful for you|I hope you feel how much you are loved|I don't take a single day for granted}."
+      - "{Thank you for believing in me|Thank you for building a life with me|Thank you for being my safe place}."
+    closing:
+      - "{Love is not what you say, it's what you do|Grow old along with me; the best is yet to be}."
+      - "{Two hearts, one home|You are my today and all of my tomorrows}."
+    action:
+      - "{With all my love|Yours, always}. {emoji:love}"
+      - "{emoji:rose}"
+    cta:
+      - "{With all my love|Yours, always|Forever grateful}. {emoji:love}"
       - "{emoji:rose}"
       - "{Always|Forever}, {emoji}"

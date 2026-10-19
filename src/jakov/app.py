@@ -20,6 +20,7 @@ from jakov.handlers import all_routers
 from jakov.logging_setup import get_logger
 from jakov.middlewares.admin_only import AdminOnlyMiddleware
 from jakov.middlewares.db_session import DbSessionMiddleware, UpdateCounterMiddleware
+from jakov.services.scheduler import Scheduler
 from jakov.services.starter import ensure_starter_library
 from jakov.services.ui_emoji import AnimatedUiMiddleware
 
@@ -28,6 +29,7 @@ log = get_logger(__name__)
 ADMIN_COMMANDS = [
     BotCommand(command="start", description="Main menu"),
     BotCommand(command="newpost", description="Write a new post"),
+    BotCommand(command="schedules", description="Scheduled posts"),
     BotCommand(command="posts", description="Published posts: edit or delete"),
     BotCommand(command="channels", description="Linked channels and groups"),
     BotCommand(command="emoji", description="Emoji library"),
@@ -77,6 +79,7 @@ async def run(settings: Settings) -> None:
         default=DefaultBotProperties(parse_mode=ParseMode.HTML, link_preview_is_disabled=True),
     )
     bot.session.middleware(AnimatedUiMiddleware(ctx.ui))
+    ctx.scheduler = Scheduler(bot, ctx)
     dp = build_dispatcher(ctx)
 
     me = await bot.get_me()
@@ -84,6 +87,8 @@ async def run(settings: Settings) -> None:
     await _set_commands(bot, settings.admin_ids)
     health = asyncio.create_task(_health_loop(ctx, settings.health_log_interval_s))
     starter = asyncio.create_task(ensure_starter_library(bot, ctx))
+    stop_scheduler = asyncio.Event()
+    scheduler = asyncio.create_task(ctx.scheduler.run(stop_scheduler))
     try:
         if settings.run_mode == "webhook":
             await _run_webhook(bot, dp, settings)
@@ -91,7 +96,13 @@ async def run(settings: Settings) -> None:
             await bot.delete_webhook(drop_pending_updates=False)
             await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
     finally:
-        for task in (health, starter):
+        # Let the scheduler finish the run it's on, then wait for in-flight sends.
+        stop_scheduler.set()
+        with contextlib.suppress(TimeoutError):
+            async with asyncio.timeout(20):
+                await scheduler
+                await ctx.queue.drain()
+        for task in (health, starter, scheduler):
             task.cancel()
             with contextlib.suppress(asyncio.CancelledError):
                 await task

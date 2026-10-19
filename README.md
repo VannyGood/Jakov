@@ -6,9 +6,9 @@ A Telegram bot for your own channels and groups:
 - **Guard**: rule-based moderation of groups and channel comments (links, ads, spam).
 - **Scanner**: checks links and files for malware and phishing.
 
-> Status: **Phase 2 of 6**: channel linking, the post wizard with template and emoji engine,
-> animated menus, Send now, and editing or deleting published posts. Scheduling, Guard and
-> Scanner arrive in later phases.
+> Status: **Phase 3 of 6**: channel linking, the post wizard with the writing engine,
+> animated menus, Send now, scheduling with approvals, and editing or deleting published
+> posts. Guard and Scanner arrive in later phases.
 
 ## Quick start (local, long polling)
 
@@ -53,21 +53,36 @@ If a group is upgraded to a supergroup, its new ID is picked up automatically.
 4. Jakov sends **3 real previews**. Under each one: **✅ Use this** or **✏️ Edit**. Below
    them: **🔁 Rotate all 3**, **🔄 Regenerate**, **🎭 Change emojis**, and **🎨 Style**
    (Mixed, or one pack such as Dogs or Snoop Dogg).
-5. On the ready card, toggle 📌 pin, 🔕 silent and 🔗 link preview, then **📨 Send now**.
-   Scheduling arrives in Phase 3.
+5. On the ready card, toggle 📌 pin, 🔕 silent and 🔗 link preview, then **📨 Send now** or
+   **⏰ Schedule**.
 
 Every published post is stored (chat and message ID). **📰 Published** (/posts) lets you
 open, edit the text of, or delete any of them.
 
-### Templates (no AI needed)
+### Writing engine (no AI needed)
 
-Templates live in `data/templates/<type>.yaml`. Each tone has lists of `hooks`, `bodies` and
-`ctas`, and a post combines one of each. Inside a line:
+Posts are composed from **layouts** (`data/layouts.yaml`) filled with **sections** written per
+post type and tone (`data/templates/<type>.yaml`):
+
+| Layout | Shape |
+|---|---|
+| classic | headline → intro + body → call to action |
+| spotlight | headline → intro → bullet facts → call to action |
+| story | narrative → `<blockquote>` highlight → call to action |
+| punchy | headline + call to action |
+| signature | headline → body → bullet facts → italic closing → call to action → P.S. |
+
+Sections: `headline`, `intro`, `body`, `points` (bullet facts), `closing`, `cta`, `action`
+(a call to action without facts, for layouts that list them already) and `ps`. Three
+variations always try three different layouts, and every variation mentions your key
+answers (product, game, prize…). A final tidy pass fixes punctuation (`now!.` → `now!`),
+spacing and lowercase line starts. Text you write yourself keeps your own casing. Inside a line:
 
 | Syntax | Meaning |
 |---|---|
 | `{Hello\|Hi\|Hey}` | spintax: one option is picked; groups can nest |
 | `{product}`, `{price}`, … | answers from the wizard (HTML-escaped automatically) |
+| `{product.upper}`, `.title`, `.lower`, `.a` | filters; `.a` adds "a" or "an" (`an Air Max`) |
 | `{date}`, `{weekday}`, `{time}`, `{countdown}`, `{deadline}`, `{channel}` | filled at send time in your timezone |
 | `{tip}`, `{quote}`, `{fact}` | rotate through `data/pools/*.yaml` without repeats |
 | `{emoji:fire}`, `{emoji}` | an emoji for that mood, or a generic one matching type and tone |
@@ -76,11 +91,43 @@ Templates live in `data/templates/<type>.yaml`. Each tone has lists of `hooks`, 
 Moods are defined in `data/emoji_moods.yaml`. Jakov validates every template at startup,
 and the tests render all of them.
 
+## Scheduling (⏰ Schedule, /schedules)
+
+From a ready post: **⏰ Schedule** → chat → **once**, **every day at HH:MM** or **every N
+minutes/hours** → stop **never**, after **N posts** or **on a date** → options:
+
+- **🔁 Rotate variations**: cycle through the variations; every send re-spins the text and
+  picks new emoji, so repeated posts never look identical.
+- **🛂 Ask my approval**: the bot DMs you the exact post with ✅ Approve / ⏭ Skip / ✏️ Edit.
+  Nothing is posted without Approve. If you don't answer within `APPROVAL_TIMEOUT_MINUTES`
+  (default 30), the run is skipped and logged.
+
+`/schedules` lists everything with its next run in your timezone: pause, resume, send now,
+edit timing, edit post, history (last 10 runs with reasons) and delete.
+
+**Reliability**
+- Times are stored in UTC and shown in your timezone. Daily times follow DST: a time that
+  doesn't exist that day (spring forward) runs at the shifted time; an ambiguous one (fall
+  back) runs once, at the first occurrence. "Every N hours" counts real time.
+- **Catch-up**: a run that is less than `CATCHUP_GRACE_MINUTES` late (default 15) is sent;
+  older ones are skipped and logged as one summary. A long outage never causes a burst.
+- **No duplicates**: each run is reserved (unique run key) before sending. If the bot is
+  killed in the middle of a send, that run is marked *uncertain* on restart and you are told.
+  It is never re-sent automatically.
+- **One outgoing queue** for all posts: ~30 messages/s overall, 1/s per private chat, ≤20/min
+  per group or channel. Telegram's `RetryAfter` is honoured exactly; network errors back off
+  1 s → 2 s → 4 s.
+- If the bot is removed or loses posting rights, that chat's schedules **pause** and you get
+  a ▶️ Resume button. Resuming continues from now on, without replaying missed runs.
+
 ## Emoji library (😀 Emoji library or /emoji)
 
-On the first start, Jakov imports the starter packs from `data/starter_packs.yaml`
-(RestrictedEmoji, DogsEmoji, two Snoop Dogg packs, DuckEmoji, PepeEmoji, GameIcons, …):
-about 1,800 animated emoji. Static emoji are skipped.
+Jakov imports the starter packs from `data/starter_packs.yaml`: Google's
+**NotoEmojiAnimated**, **PremiumIcons**, DogsEmoji, two Snoop Dogg packs,
+TenYearsOfTelegram, DuckEmoji, PepeEmoji, GameIcons, … and RestrictedEmoji. That's about
+2,200 animated emoji (static ones are skipped). Packs added to that file later are imported
+on the next start; packs you deleted are not brought back. Posts prefer the expressive packs.
+RestrictedEmoji (animated standard emoji) is only a fallback.
 
 - `/emojipack https://t.me/addemoji/Name` imports a pack.
 - `/addemoji fire`, then send a message with your own custom emoji, tags them with a mood.
@@ -93,8 +140,10 @@ Emoji are tagged with moods automatically from their base character (🔥 → fi
 ### Animated menus
 
 Every message and button the bot sends to an admin uses the animated version of its emoji
-(Bot API 9.4 custom emoji and button icons). Turn it off, or pick the pack used for menus,
-in **⚙️ Settings**. Previews and real posts are never rewritten, so a preview always shows
+(Bot API 9.4 custom emoji and button icons). The default **✨ Premium** style uses
+hand-picked icons from `data/ui_icons.yaml` (glossy PremiumIcons tiles and Google's animated
+Noto emoji). Edit that file to change any icon. In **⚙️ Settings** you can turn animated
+menus off or use any pack as the menu style. Previews and real posts are never rewritten, so a preview always shows
 exactly what will be published.
 
 ## Custom (animated) emoji

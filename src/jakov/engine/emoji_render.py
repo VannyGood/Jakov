@@ -39,6 +39,8 @@ class EmojiPalette:
 
     moods: Mapping[str, Sequence[str]]
     emojis: Sequence[LibEmoji] = ()
+    # Packs used in posts only when nothing more expressive exists for a mood.
+    base_packs: frozenset[str] = frozenset()
     _by_mood: dict[str, list[LibEmoji]] = field(default_factory=dict, init=False)
 
     def __post_init__(self) -> None:
@@ -57,7 +59,8 @@ class EmojiPalette:
             styled = [e for e in found if e.pack == style]
             if styled:
                 return styled
-        return list(found)
+        expressive = [e for e in found if e.pack not in self.base_packs]
+        return expressive or list(found)
 
     def plain(self, mood: str) -> list[str]:
         return list(self.moods.get(mood, ())) or ["✨"]

@@ -25,6 +25,12 @@ router = Router(name="membership")
 async def on_my_chat_member(event: ChatMemberUpdated, bot: Bot, ctx: AppContext,
                             session: AsyncSession) -> None:
     change = await handle_membership(event, ChatRepo(session, ctx.owner_id), ctx.admin_ids)
+    if change.chat is not None and ctx.scheduler is not None \
+            and (not change.chat.is_active or not change.chat.can_post):
+        paused = await ctx.scheduler.pause_for_chat(
+            session, change.chat.id, "I lost access or posting rights in this chat.")
+        if paused and change.message:
+            change.message += f"\n⏸ Paused {paused} schedule(s) for this chat."
     log.info("my_chat_member", chat_id=event.chat.id,
              old=status_value(event.old_chat_member.status),
              new=status_value(event.new_chat_member.status))

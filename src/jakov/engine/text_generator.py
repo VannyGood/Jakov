@@ -7,10 +7,12 @@ same interface; nothing else depends on it.
 from __future__ import annotations
 
 import random
+import re
 from dataclasses import dataclass, field
 from typing import Protocol
 
-from jakov.engine.catalog import Catalog
+from jakov.engine.catalog import SECTION_RE, Catalog
+from jakov.engine.variables import placeholders
 
 
 @dataclass(frozen=True, slots=True)
@@ -18,6 +20,10 @@ class GenerationRequest:
     post_type: str
     tone: str
     answers: dict[str, str] = field(default_factory=dict)
+
+
+# Sections a layout may use without the tone providing them (the line is dropped).
+OPTIONAL_SECTIONS = frozenset({"ps", "points"})
 
 
 class TextGenerator(Protocol):
@@ -29,7 +35,7 @@ class TextGenerator(Protocol):
 
 
 class TemplateGenerator:
-    """Combines a hook, body and call to action from the YAML catalog."""
+    """Composes posts from layouts (data/layouts.yaml) and per-tone sections."""
 
     name = "templates"
 
@@ -37,29 +43,55 @@ class TemplateGenerator:
         self.catalog = catalog
         self.rng = rng or random.Random()
 
+    def required_fields(self, post_type: str) -> set[str]:
+        """Answers every variation must mention (choices only steer the wording)."""
+        return {q.key for q in self.catalog.types[post_type].questions
+                if q.required and q.kind != "choice"}
+
+    def usable_layouts(self, post_type: str, tone: str) -> list[str]:
+        pt = self.catalog.types[post_type]
+        return [name for name in pt.layouts
+                if all(pt.section(tone, s) for s in SECTION_RE.findall(self.catalog.layouts[name])
+                       if s not in OPTIONAL_SECTIONS)]
+
+    def compose(self, post_type: str, tone: str, layout: str) -> str:
+        pt = self.catalog.types[post_type]
+        picks: dict[str, str] = {}
+        for section in set(SECTION_RE.findall(self.catalog.layouts[layout])):
+            lines = pt.section(tone, section)
+            if section == "points":
+                picks[section] = "\n".join(lines)
+            else:
+                picks[section] = self.rng.choice(lines) if lines else ""
+        out: list[str] = []
+        for line in self.catalog.layouts[layout].split("\n"):
+            used = SECTION_RE.findall(line)
+            if used and not any(picks[s].strip() for s in used):
+                continue
+            out.append(SECTION_RE.sub(lambda m: picks[m.group(1)], line))
+        return re.sub(r"\n{3,}", "\n\n", "\n".join(out)).strip()
+
     async def generate(
         self, request: GenerationRequest, count: int, exclude: frozenset[str] = frozenset()
     ) -> list[str]:
-        parts = self.catalog.types[request.post_type].tones[request.tone]
-        combos = [
-            "\n\n".join((hook, body, cta))
-            for hook in parts.hooks for body in parts.bodies for cta in parts.ctas
-        ]
-        fresh = [c for c in combos if c not in exclude] or combos
-        self.rng.shuffle(fresh)
-        # Prefer variations that don't share a hook, so the three previews feel different.
+        layouts = self.usable_layouts(request.post_type, request.tone)
+        if not layouts:
+            raise ValueError(f"no usable layout for {request.post_type}/{request.tone}")
+        self.rng.shuffle(layouts)
+        required = self.required_fields(request.post_type)
         picked: list[str] = []
-        used_hooks: set[str] = set()
-        for combo in fresh:
-            hook = combo.split("\n\n", 1)[0]
-            if hook not in used_hooks:
-                picked.append(combo)
-                used_hooks.add(hook)
-            if len(picked) == count:
-                return picked
-        for combo in fresh:
-            if combo not in picked:
-                picked.append(combo)
-            if len(picked) == count:
-                break
+        first_lines: set[str] = set()
+        attempts = 0
+        # Cycle through layouts so consecutive variations look structurally different.
+        while len(picked) < count and attempts < count * 60:
+            layout = layouts[attempts % len(layouts)]
+            attempts += 1
+            text = self.compose(request.post_type, request.tone, layout)
+            first = text.split("\n", 1)[0]
+            if text in exclude or text in picked or not required <= placeholders(text):
+                continue
+            if first in first_lines and attempts < count * 15:
+                continue
+            picked.append(text)
+            first_lines.add(first)
         return picked

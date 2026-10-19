@@ -8,6 +8,7 @@ from dataclasses import dataclass
 
 from jakov.engine.emoji_render import EmojiPicker, render_emoji_tokens
 from jakov.engine.spintax import spin
+from jakov.engine.tidy import tidy
 from jakov.engine.variables import BUILTIN_NAMES, fill, placeholders
 
 
@@ -25,10 +26,14 @@ def resolve_spintax(template: str, rng: random.Random) -> str:
     return spin(template, rng)
 
 
-def render(resolved: str, data: RenderInput, picker: EmojiPicker) -> str:
-    """`resolved` is spun text with placeholders and emoji tokens still in it."""
+def render(resolved: str, data: RenderInput, picker: EmojiPicker, *,
+           capitalize: bool = True) -> str:
+    """`resolved` is spun text with placeholders and emoji tokens still in it.
+
+    `capitalize=False` for text the admin wrote themselves: their casing is kept.
+    """
     filled = fill(resolved, data.values, data.known)
-    return render_emoji_tokens(filled, picker)
+    return tidy(render_emoji_tokens(filled, picker), capitalize=capitalize)
 
 
 def needed_pools(text: str, pools: Mapping[str, object]) -> list[str]:

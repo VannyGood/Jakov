@@ -21,9 +21,10 @@ def back_button(to: str = "main", text: str = "⬅️ Back") -> InlineKeyboardBu
 def main_menu_kb() -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     kb.button(text="✍️ New post", callback_data=MenuCb(to="newpost"))
+    kb.button(text="🗓 Schedules", callback_data=MenuCb(to="schedules"))
     kb.button(text="📰 Published", callback_data=MenuCb(to="published"))
     kb.button(text="😀 Emoji library", callback_data=MenuCb(to="emoji"))
     kb.button(text="📡 Channels", callback_data=MenuCb(to="channels"))
     kb.button(text="⚙️ Settings", callback_data=MenuCb(to="settings"))
-    kb.adjust(1, 2, 2)
+    kb.adjust(1, 2, 2, 1)
     return kb.as_markup()

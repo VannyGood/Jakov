@@ -139,7 +139,7 @@ async def _render_pack(callback: CallbackQuery, ctx: AppContext, session: AsyncS
         return False
     items = await repo.in_pack(pack.name)
     user = await UserRepo(session, ctx.owner_id).get(callback.from_user.id)
-    menu_pack = (user.ui_emoji_pack if user else None) or ctx.library.default_ui_pack
+    menu_pack = user.ui_emoji_pack if user else None
     link = (f'\n<a href="https://t.me/addemoji/{html.escape(pack.name)}">Open in Telegram</a>'
             if pack.name else "")
     text = (f"📦 <b>{html.escape(pack.title)}</b>{link}\n"

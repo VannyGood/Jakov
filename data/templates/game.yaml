@@ -1,69 +1,147 @@
 type: game
 title: "🎮 Game invite"
 palette: [game, win, fire, sword, trophy]
+layouts: [classic, spotlight, story, punchy, signature]
 questions:
   - key: game
     prompt: "🎮 What game are we playing?"
     required: true
-    max_len: 80
+    max_len: 60
   - key: cta
-    prompt: "📣 What should people do? (e.g. <i>Join the lobby at 9 PM</i>)"
+    prompt: "📣 How do people join? (e.g. <i>Join the voice channel</i>, <i>Lobby code 4471</i>)"
     required: false
-    max_len: 200
+    max_len: 160
   - key: when
     prompt: "⏰ When does it start? (e.g. <i>today 21:00</i>, <i>friday 20:00</i>, <i>in 2 hours</i>)"
     kind: datetime
     required: false
+points:
+  - "{emoji:game} <b>Game:</b> {game}"
+  - "[[{emoji:calendar} <b>When:</b> {when}]]"
+  - "[[{emoji:clock} <b>Starts in:</b> {countdown}]]"
+  - "[[{emoji:point} <b>How to join:</b> {cta}]]"
 tones:
   hype:
-    hooks:
-      - "{emoji:fire} <b>{GAME TIME|IT'S GO TIME|LET'S GOOO|SQUAD UP}!</b> {emoji:fire}"
-      - "{emoji:game} <b>{game}</b> {is calling|needs you|is ON} {emoji:rocket}"
-      - "{emoji:hype} <b>{Who's ready|Are you ready|You in}?</b> {emoji:hype}"
-    bodies:
-      - "{We're jumping into|Tonight we hit|Get ready for} <b>{game}</b>{ and it's going to be wild| with the whole crew|, no mercy}! {emoji:sword}"
-      - "<b>{game}</b> {session|lobby|match} {incoming|loading|about to start} {emoji:game} {Bring your A-game|Warm up those fingers|No excuses}!"
-      - "{Grab your controller|Charge your headset|Clear your schedule}, <b>{game}</b> {awaits|is waiting|starts soon} {emoji:win}"
-    ctas:
-      - "[[{emoji:clock} Starts <b>{when}</b> ({countdown} to go)]]\n[[{emoji:point} {cta}]]"
-      - "[[{emoji:point} <b>{cta}</b>]]\n[[{emoji:clock} {Kickoff|Start}: {when}]] {emoji:trophy}"
-      - "[[{emoji:megaphone} {cta}]]\n{Don't miss it|See you there|Last one in is a noob}! {emoji:fire}"
+    headline:
+      - "{emoji:fire} <b>{game.upper} {NIGHT|SHOWDOWN|IS LIVE}</b> {emoji:fire}"
+      - "{emoji:game} <b>{Squad up|Lock in|Gear up}. {game} {starts soon|is calling|goes live}.</b>"
+      - "{emoji:trophy} <b>{The arena is open|The lobby is open|Game on}: {game}</b>"
+      - "{emoji:hype} <b>{Think you've got what it takes|Ready to carry the team|Who's ready to dominate}?</b>"
+      - "{emoji:sword} <b>{game}</b> · {no mercy|winner takes all|all in} {emoji:sword}"
+    intro:
+      - "{Clear your schedule|Charge the controllers|Warm up those hands}: we're {jumping into|taking over|running} <b>{game}</b>{ together| as one squad| with the whole crew}."
+      - "{It's been too long|The wait is over|Tonight is the night}. <b>{game}</b> is {back on|on}, and {there's a seat with your name on it|we want you in the lobby|the squad isn't complete without you}."
+      - "{One lobby|One squad|One mission}. {Pure skill|Zero excuses|Maximum chaos}. <b>{game}</b>[[, {when}]]."
+      - "{Bring your best plays|Bring your A-game|Bring the energy}: <b>{game}</b> is about to {get loud|heat up|go off}."
+      - "{The squad is assembling|Mics are on|The lobby is filling up} for <b>{game}</b>, and {we saved you a spot|the hype is real|it's going to be legendary}."
+    body:
+      - "{Every match is a chance to climb|Every round counts|Every play matters}, and {legends aren't made sitting out|the best stories start with \"one more game\"|nobody remembers the ones who stayed offline}. {emoji:muscle}"
+      - "Expect {clutch moments|insane comebacks|nonstop action}, {big plays|loud mics|good energy} and {bragging rights for the winners|a lobby full of legends|clips for the highlight reel}. {emoji:star}"
+      - "{Skill level doesn't matter|Rookie or veteran, it doesn't matter}: {show up, play hard and have fun|what matters is that you show up|we play to win and laugh while doing it}. {emoji:win}"
+      - "{We've got the strategy|The plan is simple}: {play smart, play together, play to win|communicate, adapt, dominate|outplay, outlast, celebrate}. {emoji:trophy}"
+      - "{This is where rivalries are born|Friendly fire not included|Respect is earned in the lobby} {emoji:sword}"
+    closing:
+      - "{Legends don't wait for an invite|Fortune favours the bold|Champions show up}."
+      - "{One more game is never just one more game|Win or learn, but always play}."
+      - "{The best players aren't born. They log in|GG is earned, not given}."
+      - "{See you on the battlefield|May your ping be low and your aim be true}."
+    action:
+      - "{emoji:point} <b>{Lock in your spot|Join the squad|Get in the lobby}</b>{ now|, let's go|}! {emoji:fire}"
+      - "{emoji:fire} {Drop a|React with a} {emoji:fire} {if you're in|to claim your spot}!"
+      - "{emoji:megaphone} <b>{Tag your duo|Bring a friend|Rally your squad}</b> and {jump in|let's go}!"
+    cta:
+      - "[[{emoji:point} <b>{cta}</b>]]\n[[{emoji:clock} {Kick-off|Start}: <b>{when}</b> · {countdown} to go]]"
+      - "[[{emoji:clock} <b>{when}</b>: {be there|don't be late|we start sharp}.]]\n[[{emoji:point} {cta}]]"
+      - "{emoji:point} {Drop a|Reply with a|React with} {emoji:fire} {if you're in|to claim your spot|and we'll save you a slot}!"
+      - "[[{emoji:point} {cta}. ]]{Spots are limited|First come, first served|Don't miss it}! {emoji:fire}"
+      - "{emoji:megaphone} <b>{Tag your duo|Bring a friend|Rally your squad}</b> and {jump in|let's go|get ready}!"
+    ps:
+      - "P.S. {Late joiners buy the snacks|Last one in picks the worst map|Spots fill up fast}. {emoji:laugh}"
+      - "P.S. {Turn on notifications so you don't miss the start|Mics on, excuses off}. {emoji:megaphone}"
   chill:
-    hooks:
-      - "{emoji:game} {Hey|Yo|Hi} {everyone|folks|squad} {emoji:wave}"
-      - "{emoji:cool} {Chill|Cozy|Easy} {game night|session|evening} {ahead|incoming}"
-      - "{emoji:chill} {Fancy a game|Up for a round|Want to play}?"
-    bodies:
-      - "{We're playing|Jumping into|Hanging out in} <b>{game}</b>{, no pressure| for a few rounds|, just for fun} {emoji:game}"
-      - "<b>{game}</b> {with good vibes only|at a relaxed pace|and good company} {emoji:sparkles}"
-      - "{Come|Feel free to} {join us|hop in|drop by} for some <b>{game}</b> {emoji:cool}"
-    ctas:
-      - "[[{emoji:clock} {when}]]\n[[{cta}]] {emoji:wave}"
-      - "[[{emoji:point} {cta}]]\n[[{emoji:calendar} {when}]]"
-      - "[[{cta} {emoji:chill}]]\n{Everyone's welcome|All levels welcome}."
+    headline:
+      - "{emoji:game} <b>{Game night|Chill session|Casual lobby}: {game}</b>"
+      - "{emoji:cool} <b>{game}</b>, {nice and easy|good vibes only|no pressure}"
+      - "{emoji:chill} <b>{Fancy a round of|Up for some|Anyone for} {game}?</b>"
+      - "{emoji:sparkles} <b>{Cozy|Relaxed|Easy-going} {game} {evening|session|hangout}</b>"
+    intro:
+      - "{We're hopping into|Settling in for|Hanging out in} <b>{game}</b>{ for a few rounds| this evening| later on}, and {you're welcome to join|the more the merrier|everyone is invited}."
+      - "{No tryhards, no stress|No ranked pressure|No sweat}: just <b>{game}</b>{, good company and a few laughs| and good company| at our own pace}."
+      - "{If you've been looking for an excuse to play|If you need a break from the day|If you just want to unwind}, <b>{game}</b>[[ {when}]] is {it|the plan|a good one}."
+      - "{A small get-together|A laid-back session|A friendly lobby} around <b>{game}</b>{. Come as you are| for anyone who fancies it}."
+    body:
+      - "{Grab a drink|Get comfortable|Put your feet up}, {join the call|hop in|drop by} and {play as much or as little as you like|stay for one round or ten|enjoy the ride}. {emoji:drink}"
+      - "{All skill levels welcome|Beginners are more than welcome|New faces are always welcome}, and {nobody keeps score of the score|the only rule is to have fun|we'll show you the ropes}. {emoji:wave}"
+      - "{It's less about winning|It's not about the leaderboard} and more about {good company|the conversations in between|sharing a few laughs}. {emoji:chill}"
+      - "{Quiet music|Good chat|Easy games}, {zero pressure|good people|nice vibes}. {That's the whole plan|Simple as that}. {emoji:sparkles}"
+    closing:
+      - "{Good games, good people|Play slow, laugh often|It's about the company, not the score}."
+      - "{Sometimes the best plan is no plan|Unwind, log in, enjoy}."
+      - "{Come for the game, stay for the people|Everyone plays, everyone wins}."
+    action:
+      - "{Hope to see you there|See you in the lobby|Drop in anytime} {emoji:wave}"
+      - "{Reply here if you're joining|Let us know if you're in} {emoji:cool}"
+    cta:
+      - "[[{emoji:clock} {when}]]\n[[{emoji:point} {cta}]]"
+      - "[[{emoji:point} {cta}. ]]{Hope to see you there|See you in the lobby|Drop in anytime} {emoji:wave}"
+      - "{Reply here if you're joining|Let us know if you're in} {emoji:cool}[[ · {when}]]"
+      - "{emoji:point} {Just show up|Just join in|Pull up a chair}[[, {when}]]. {emoji:chill}"
+    ps:
+      - "P.S. {Snacks recommended, not required|Pyjamas are a valid dress code}. {emoji:food}"
   funny:
-    hooks:
-      - "{emoji:laugh} {Warning|Attention|Breaking news}: {skill issues|rage quits|chaos} {expected|incoming|guaranteed} {emoji:ghost}"
-      - "{emoji:devil} {Who wants to lose|Ready to get carried|Time to blame lag} {again|tonight}?"
-      - "{emoji:eyes} {Your controller misses you|Your teammates are lonely|The lobby is suspiciously empty}"
-    bodies:
-      - "<b>{game}</b> {tonight|incoming}: {bring snacks, leave your dignity|lag is not an excuse (it is)|we promise to only scream a little} {emoji:laugh}"
-      - "{We need someone to blame|Our team needs a scapegoat|We're short one hero}: join <b>{game}</b> {emoji:devil}"
-      - "<b>{game}</b>: {where friendships go to die|the cardio we actually do|100% skill, 0% luck (lies)} {emoji:ghost}"
-    ctas:
-      - "[[{emoji:point} {cta}]]\n[[{emoji:clock} {when} ({countdown} to prepare excuses)]]"
-      - "[[{emoji:clock} {when}]]\n[[{cta}]] {emoji:laugh}"
-      - "[[{cta}]]\n{Losers buy pizza|No crying in the lobby|Bring tissues} {emoji:laugh}"
+    headline:
+      - "{emoji:laugh} <b>{Warning|Public notice|Breaking news}: {game} {chaos|rage quits|skill issues} {incoming|expected|guaranteed}</b>"
+      - "{emoji:devil} <b>{Who wants to lose|Ready to get carried|Time to blame the lag} {at|in} {game}?</b>"
+      - "{emoji:ghost} <b>{game}</b>: {where friendships go to die|the cardio we actually do|100% skill, 0% luck (lies)}"
+      - "{emoji:eyes} <b>{Your controller misses you|Your teammates feel lonely|The lobby is suspiciously empty}</b>"
+    intro:
+      - "{We need someone to blame|Our team is short one scapegoat|We're looking for a hero (or a distraction)}, so we're playing <b>{game}</b>[[ {when}]]."
+      - "<b>{game}</b> {tonight|is happening}: {bring snacks, leave your dignity|lag is not an excuse (it is)|we promise to scream only a little}."
+      - "{Scientists confirm|Our sources confirm|Studies show (we made them up)}: playing <b>{game}</b> {improves your mood by 73%|is better than doing chores|counts as exercise}."
+      - "{Do you enjoy losing with style|Are you bad at <b>{game}</b> but confident about it|Do you want to feel something}? {Perfect|Great|Say no more}, join us for <b>{game}</b>."
+    body:
+      - "{Expected outcomes|What to expect}: {questionable strategies|dramatic comebacks|someone forgetting to unmute}, {wild accusations|emotional damage|heroic fails} and {at least one legendary blunder|a lot of yelling|zero regrets}. {emoji:laugh}"
+      - "{No skill required|Talent is optional|Being good is overrated}. {Enthusiasm|Snacks|A sense of humour} {is|are} {mandatory|non-negotiable}. {emoji:food}"
+      - "{We've practised|We've trained|We've prepared} for {weeks|months|literally zero minutes}. {Results may vary|Expect chaos|Lower your expectations}. {emoji:devil}"
+      - "{Your mum said it's okay|We already told your boss|Your houseplants will cope without you}. {emoji:eyes}"
+    closing:
+      - "{It's not losing, it's strategic learning|Lag is a lifestyle|We don't rage quit, we tactically retreat}."
+      - "{Skill issue? Never heard of it|Respawn, regret, repeat}."
+      - "{Losers buy pizza. We all know who that is|What happens in the lobby stays in the lobby}."
+    action:
+      - "{emoji:point} {Reply|Comment} \"{I'm in|carry me}\" {and accept your fate|if you dare}. {emoji:laugh}"
+      - "{Losers buy pizza|No crying in the lobby}. {emoji:devil}"
+    cta:
+      - "[[{emoji:point} {cta}]]\n[[{emoji:clock} {when}, so {countdown} to prepare your excuses]]"
+      - "{emoji:point} {Reply|Comment} \"{I'm in|count me in|carry me}\" {and accept your fate|if you dare|before you change your mind}. {emoji:laugh}"
+      - "[[{emoji:clock} {when}. ]]{Bring tissues|Bring snacks|Bring your excuses} {emoji:laugh}"
+      - "[[{cta}. ]]{Losers buy pizza|No crying in the lobby|Winner gets bragging rights forever} {emoji:devil}"
+    ps:
+      - "P.S. {If you're reading this, you're already late|We will blame you for everything. Lovingly}. {emoji:laugh}"
+      - "P.S. {Controllers thrown: 0 so far. Let's keep it that way|Mute button tutorial available on request}. {emoji:ghost}"
   serious:
-    hooks:
-      - "{emoji:game} <b>{Game session|Match|Tournament round} {announcement|notice|scheduled}</b>"
-      - "{emoji:info} <b>{game}</b>: {session details|event info|lineup call}"
-      - "{emoji:point} <b>{Players wanted|Team call|Roster open}</b>"
-    bodies:
-      - "{We are organising|We're hosting|A new session of} <b>{game}</b>{ for the community| and we need players}."
-      - "{Join us for|Take part in} <b>{game}</b>{. Fair play expected|. All rules apply|. Please be on time}."
-      - "<b>{game}</b>: {open to all members|registered players first|limited slots}."
-    ctas:
-      - "[[{emoji:calendar} Start: <b>{when}</b>]]\n[[{emoji:check} {cta}]]"
-      - "[[{emoji:check} {cta}]]\n[[{emoji:clock} {when}]]"
-      - "[[{cta}]]\n[[{emoji:clock} {countdown} remaining]]"
+    headline:
+      - "{emoji:game} <b>{game}: {session|match|event} {announcement|schedule|details}</b>"
+      - "{emoji:info} <b>{Upcoming|Scheduled} {game} {session|match}</b>"
+      - "{emoji:point} <b>{Players wanted|Roster call|Registration open}: {game}</b>"
+      - "{emoji:trophy} <b>{game} · {community|team|club} {session|event}</b>"
+    intro:
+      - "{We are organising|We are hosting|We're scheduling} a <b>{game}</b> {session|match|event}{ for the community| for our members| and are looking for players}."
+      - "{A new|The next} <b>{game}</b> {session|match} {is planned|has been scheduled}[[ for <b>{when}</b>]]."
+      - "{Members interested in|Anyone interested in|Players who enjoy} <b>{game}</b> {are invited to take part|can sign up below|are welcome to join}."
+    body:
+      - "{Fair play and respect are expected from all participants|Please be respectful toward all players|Good sportsmanship is expected throughout}."
+      - "{Please arrive a few minutes early|Please be ready a few minutes before the start} {so we can start on time|to set up teams|to check your connection}."
+      - "{Slots are limited|The number of places is limited}{, so early confirmation is appreciated|. Priority goes to confirmed players}."
+      - "{The session is open to all skill levels|Experience is not required}. {Teams will be balanced on arrival|We'll organise teams at the start}."
+    closing:
+      - "{Thank you for being part of the community|We look forward to a great session}."
+      - "{Respect the game, respect the players|Play fair, play well}."
+    action:
+      - "{emoji:check} {Please confirm your participation in the comments|Reply below to reserve your place}."
+      - "{emoji:point} {Questions can be sent to the admins|We look forward to seeing you}."
+    cta:
+      - "[[{emoji:calendar} <b>Start:</b> {when}]]\n[[{emoji:check} {cta}]]"
+      - "[[{emoji:check} {cta}]]\n[[{emoji:clock} Time remaining: {countdown}]]"
+      - "{emoji:point} {Please confirm your participation in the comments|Reply below to reserve your place}[[ before {when}]]."
+      - "[[{emoji:check} <b>How to join:</b> {cta}]]\n{Questions can be sent to the admins|Contact the admins with any questions}."

@@ -1,0 +1,58 @@
+# Hand-picked animated icons for the bot's own menus and buttons (the "Premium" menu style).
+# Key: the emoji used in the UI text. The icon may look different from the key emoji;
+# Telegram shows the key emoji as a fallback where custom emoji can't be displayed.
+# Edit freely: `pack` and `index` are documentation, `id` is what the bot uses.
+icons:
+  "🤖": {id: "5431490770089560625", pack: PremiumIcons, index: 32}  # purple bot face tile
+  "✍️": {id: "5219917343899024614", pack: NotoEmojiAnimated, index: 42}  # Google animated writing hand
+  "✏️": {id: "5219917343899024614", pack: NotoEmojiAnimated, index: 42}  # writing hand
+  "📝": {id: "5219917343899024614", pack: NotoEmojiAnimated, index: 42}  # writing hand
+  "📰": {id: "5343584905643180151", pack: PremiumIcons, index: 10}  # orange document tile
+  "😀": {id: "5343930942568283286", pack: PremiumIcons, index: 16}  # pink smiley tile
+  "📡": {id: "5429482572230965990", pack: PremiumIcons, index: 46}  # Telegram plane badge
+  "📢": {id: "5400038655861466061", pack: PremiumIcons, index: 39}  # NEW gradient tile
+  "📣": {id: "5400038655861466061", pack: PremiumIcons, index: 39}  # NEW gradient tile
+  "⚙️": {id: "5368682684476308830", pack: PremiumIcons, index: 23}  # blue chat-with-sliders tile
+  "🕒": {id: "5431672893882778047", pack: PremiumIcons, index: 33}  # purple clock tile
+  "⏰": {id: "5431672893882778047", pack: PremiumIcons, index: 33}  # purple clock tile
+  "⏳": {id: "5431672893882778047", pack: PremiumIcons, index: 33}  # purple clock tile
+  "✨": {id: "5221980766447107121", pack: NotoEmojiAnimated, index: 92}  # Google animated sparkles
+  "⭐": {id: "5348247994586121380", pack: PremiumIcons, index: 56}  # gold sparkling star
+  "🔥": {id: "5219892836815634821", pack: NotoEmojiAnimated, index: 5}  # Google animated fire
+  "📦": {id: "5343863498696833806", pack: PremiumIcons, index: 18}  # purple cards tile
+  "🏷️": {id: "5429166458343011591", pack: PremiumIcons, index: 28}  # green sticker tile
+  "🎨": {id: "5341665785406308254", pack: PremiumIcons, index: 19}  # purple brush tile
+  "🧪": {id: "5343766389486272458", pack: PremiumIcons, index: 14}  # pink speedometer tile
+  "📍": {id: "5431626942027677918", pack: PremiumIcons, index: 34}  # blue location tile
+  "📌": {id: "5431626942027677918", pack: PremiumIcons, index: 34}  # blue location tile
+  "🔕": {id: "5427104474608974234", pack: PremiumIcons, index: 24}  # blue muted tile
+  "📨": {id: "5431388979364643149", pack: PremiumIcons, index: 31}  # pink send-arrow bubble
+  "📎": {id: "5341285075210224047", pack: PremiumIcons, index: 20}  # purple gallery tile
+  "🖼️": {id: "5341285075210224047", pack: PremiumIcons, index: 20}  # purple gallery tile
+  "🎬": {id: "5429584229811896096", pack: PremiumIcons, index: 27}  # green play tile
+  "🎮": {id: "5222326554264107460", pack: NotoEmojiAnimated, index: 70}  # Google animated space invader
+  "🛒": {id: "5431646131941556182", pack: PremiumIcons, index: 29}  # green shop tile
+  "💘": {id: "5219882649153207706", pack: NotoEmojiAnimated, index: 0}  # Google animated sparkling heart
+  "💞": {id: "5219975764044187346", pack: NotoEmojiAnimated, index: 150}  # Google animated revolving hearts
+  "🎁": {id: "5426999892155318407", pack: PremiumIcons, index: 38}  # gradient gift tile
+  "💼": {id: "5431745143822632981", pack: PremiumIcons, index: 35}  # blue briefcase tile
+  "😎": {id: "5219714264960367488", pack: NotoEmojiAnimated, index: 88}  # Google animated cool face
+  "😂": {id: "5219836933521310655", pack: NotoEmojiAnimated, index: 16}  # Google animated tears of joy
+  "🥰": {id: "5220151514105937555", pack: NotoEmojiAnimated, index: 22}  # Google animated hearts face
+  "❤️‍🔥": {id: "5222274525030283328", pack: NotoEmojiAnimated, index: 33}  # Google animated heart on fire
+  "❤️": {id: "5220182699863475994", pack: NotoEmojiAnimated, index: 20}  # Google animated red heart
+  "🎉": {id: "5219691329835005804", pack: NotoEmojiAnimated, index: 1}  # Google animated party popper
+  "👋": {id: "5222099406328722117", pack: NotoEmojiAnimated, index: 75}  # Google animated waving hand
+  "👀": {id: "5219868574545378630", pack: NotoEmojiAnimated, index: 125}  # Google animated eyes
+  "👌": {id: "5220198479573320510", pack: NotoEmojiAnimated, index: 74}  # Google animated OK hand
+  "💰": {id: "5431416651838932108", pack: PremiumIcons, index: 63}  # gold coin
+  "⚠️": {id: "5345814569195421891", pack: TopicIcons, index: 47}  # Telegram animated exclamation
+  "❔": {id: "5348337458754894202", pack: TopicIcons, index: 46}  # Telegram animated question mark
+  "ℹ️": {id: "5323538339062628165", pack: TopicIcons, index: 109}  # Telegram animated speech dots
+  "⬅️": {id: "5429504489449076996", pack: AdaptiveLines, index: 13}  # animated left arrow (adapts to theme)
+  "⏭": {id: "5431352862984651645", pack: AdaptiveLines, index: 12}  # animated right arrow
+  "✖️": {id: "5465665476971471368", pack: RestrictedEmoji, index: 684}  # animated red cross
+  "🔁": {id: "5264727218734524899", pack: RestrictedEmoji, index: 709}  # animated arrows
+  "🚪": {id: "5222099406328722117", pack: NotoEmojiAnimated, index: 75}  # waving hand
+  "🗓️": {id: "5364233403300330811", pack: TopicIcons, index: 13}  # animated calendar
+  "📅": {id: "5364233403300330811", pack: TopicIcons, index: 13}  # animated calendar

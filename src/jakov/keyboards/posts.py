@@ -5,7 +5,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from jakov.db.models import Chat, Post, PublishedPost
 from jakov.engine.catalog import Catalog, Question
-from jakov.keyboards.callbacks import MenuCb, PostCb, PubCb
+from jakov.keyboards.callbacks import MenuCb, PostCb, PubCb, SchCb
 from jakov.keyboards.common import cancel_button
 
 
@@ -75,7 +75,9 @@ def ready_kb(post: Post) -> InlineKeyboardMarkup:
              _btn(f"🔕 Silent: {flag(post.silent)}", "opt_silent", post.id)]]
     if not post.has_media:
         rows.append([_btn(f"🔗 Link preview: {flag(post.link_preview)}", "opt_preview", post.id)])
-    rows.append([_btn("📨 Send now", "send", post.id)])
+    rows.append([_btn("📨 Send now", "send", post.id),
+                 InlineKeyboardButton(text="⏰ Schedule", callback_data=SchCb(
+                     action="new", pk=post.id).pack())])
     rows.append([_btn("⬅️ Back to variations", "back", post.id),
                  _btn("✖️ Close", "close", post.id)])
     return InlineKeyboardMarkup(inline_keyboard=rows)

@@ -41,6 +41,13 @@ class Settings(BaseSettings):
     emoji_test_pack: str = "RestrictedEmoji"
     health_log_interval_s: int = 600
 
+    # Scheduler
+    scheduler_tick_seconds: float = Field(default=5.0, ge=1.0, le=60.0)
+    # A run more than this many minutes late (e.g. bot was offline) is skipped and logged.
+    catchup_grace_minutes: int = Field(default=15, ge=0, le=24 * 60)
+    approval_timeout_minutes: int = Field(default=30, ge=1, le=7 * 24 * 60)
+    min_interval_minutes: int = Field(default=5, ge=1)
+
     virustotal_api_key: SecretStr | None = None
     safe_browsing_api_key: SecretStr | None = None
     anthropic_api_key: SecretStr | None = None

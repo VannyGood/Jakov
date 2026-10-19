@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import random
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -14,7 +13,9 @@ from aiogram.exceptions import (
     TelegramAPIError,
     TelegramBadRequest,
     TelegramForbiddenError,
+    TelegramNetworkError,
     TelegramRetryAfter,
+    TelegramServerError,
 )
 from aiogram.types import (
     InlineKeyboardButton,
@@ -27,7 +28,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from jakov.db.base import utcnow
 from jakov.db.models import Chat, Post, PostVariation, PublishedPost
 from jakov.engine.catalog import Catalog
-from jakov.engine.compose import RenderInput, needed_pools, render
+from jakov.engine.compose import RenderInput, needed_pools, render, resolve_spintax
 from jakov.engine.emoji_render import EmojiPicker, merge_moods, strip_custom_emoji
 from jakov.engine.limits import check_length
 from jakov.engine.variables import builtin_values
@@ -35,6 +36,7 @@ from jakov.logging_setup import get_logger
 from jakov.services.emoji_capability import has_custom_emoji
 from jakov.services.emoji_library import EmojiLibrary
 from jakov.services.pools import pool_values
+from jakov.services.send_queue import SendQueue
 from jakov.services.ui_emoji import raw_output
 
 log = get_logger(__name__)
@@ -96,7 +98,8 @@ async def render_variation(
     picker = EmojiPicker(library.palette, random.Random(variation.emoji_seed),
                          custom=custom_emoji, style=post.emoji_style,
                          generic_moods=post_moods(post, catalog))
-    html = render(variation.resolved, RenderInput(values, fields), picker)
+    html = render(variation.resolved, RenderInput(values, fields), picker,
+                  capitalize=not variation.is_custom)
     if not custom_emoji:
         html = strip_custom_emoji(html)
     return Rendered(html, "<tg-emoji" in html)
@@ -112,60 +115,97 @@ def url_keyboard(
 
 
 async def send_rendered(
-    bot: Bot, chat_id: int, html: str, *, media_kind: str | None, media_file_id: str | None,
-    buttons: list[dict[str, str]], silent: bool = False, link_preview: bool = True,
-    extra_rows: list[list[InlineKeyboardButton]] | None = None,
+    bot: Bot, queue: SendQueue, chat_id: int, html: str, *, media_kind: str | None,
+    media_file_id: str | None, buttons: list[dict[str, str]], silent: bool = False,
+    link_preview: bool = True, extra_rows: list[list[InlineKeyboardButton]] | None = None,
 ) -> Message:
-    """Low-level send with one RetryAfter retry. Raises TelegramAPIError subclasses."""
+    """Send a rendered post through the queue (rate limits + retries).
+
+    Raises TelegramAPIError subclasses that aren't worth retrying (Forbidden, BadRequest).
+    """
     markup = url_keyboard(buttons, extra_rows)
-    for attempt in range(2):
-        try:
-            with raw_output():
-                if media_kind == "photo" and media_file_id:
-                    return await bot.send_photo(chat_id, media_file_id, caption=html,
-                                                parse_mode=ParseMode.HTML, reply_markup=markup,
-                                                disable_notification=silent)
-                if media_kind == "video" and media_file_id:
-                    return await bot.send_video(chat_id, media_file_id, caption=html,
-                                                parse_mode=ParseMode.HTML, reply_markup=markup,
-                                                disable_notification=silent)
-                return await bot.send_message(
-                    chat_id, html, parse_mode=ParseMode.HTML, reply_markup=markup,
-                    disable_notification=silent,
-                    link_preview_options=LinkPreviewOptions(is_disabled=not link_preview),
-                )
-        except TelegramRetryAfter as exc:
-            if attempt:
-                raise
-            log.warning("retry_after", chat_id=chat_id, seconds=exc.retry_after)
-            await asyncio.sleep(min(exc.retry_after, 60))
-    raise AssertionError("unreachable")
+
+    async def attempt() -> Message:
+        with raw_output():
+            if media_kind == "photo" and media_file_id:
+                return await bot.send_photo(chat_id, media_file_id, caption=html,
+                                            parse_mode=ParseMode.HTML, reply_markup=markup,
+                                            disable_notification=silent)
+            if media_kind == "video" and media_file_id:
+                return await bot.send_video(chat_id, media_file_id, caption=html,
+                                            parse_mode=ParseMode.HTML, reply_markup=markup,
+                                            disable_notification=silent)
+            return await bot.send_message(
+                chat_id, html, parse_mode=ParseMode.HTML, reply_markup=markup,
+                disable_notification=silent,
+                link_preview_options=LinkPreviewOptions(is_disabled=not link_preview),
+            )
+
+    return await queue.run(chat_id, attempt)
 
 
-def pick_variation(post: Post) -> PostVariation:
-    variations = post.active_variations()
+def pick_variation(post: Post, *, rotate: bool | None = None,
+                   last_index: int | None = None) -> PostVariation:
+    """The chosen variation, or the next one in rotation after `last_index`."""
+    rotate = post.rotate if rotate is None else rotate
+    last_index = post.last_variation_index if last_index is None else last_index
+    variations = list(post.variations) if rotate else post.active_variations()
     if not variations:
         raise PublishError("This post has no text yet.")
-    if not post.rotate:
+    if not rotate:
         return variations[0]
     by_idx = sorted(variations, key=lambda v: v.idx)
-    following = [v for v in by_idx if v.idx > post.last_variation_index]
+    following = [v for v in by_idx if v.idx > last_index]
     return following[0] if following else by_idx[0]
+
+
+def fresh_spin(variation: PostVariation) -> PostVariation:
+    """A detached copy re-spun from its template with new emoji picks (scheduled sends)."""
+    rng = random.Random()
+    return PostVariation(owner_id=variation.owner_id, idx=variation.idx,
+                         template=variation.template,
+                         resolved=resolve_spintax(variation.template, rng),
+                         is_custom=variation.is_custom, emoji_seed=rng.randrange(1, 2**62))
+
+
+def ensure_can_post(chat: Chat) -> None:
+    if not chat.is_active or not chat.can_post:
+        raise PublishError(f"I can't post in {chat.name}: check my admin rights there.",
+                           lost_access=True)
+
+
+async def render_for_chat(
+    session: AsyncSession, owner_id: int, post: Post, chat: Chat, variation: PostVariation,
+    catalog: Catalog, library: EmojiLibrary, *, consume_pools: bool = True,
+) -> Rendered:
+    use_custom = chat.custom_emoji_ok is not False
+    rendered = await render_variation(session, owner_id, post, variation, catalog, library,
+                                      custom_emoji=use_custom, chat_title=chat.title,
+                                      consume_pools=consume_pools)
+    length = check_length(rendered.html, post.has_media)
+    if not length.ok:
+        raise PublishError(f"The text is {length.length} characters; the limit here is "
+                           f"{length.limit}. Shorten it first.")
+    return rendered
 
 
 async def publish(
     bot: Bot, session: AsyncSession, owner_id: int, post: Post, chat: Chat, catalog: Catalog,
-    library: EmojiLibrary, variation: PostVariation | None = None,
+    library: EmojiLibrary, queue: SendQueue, variation: PostVariation | None = None,
 ) -> tuple[PublishedPost, list[str]]:
-    """Send `post` to `chat`. Returns the record and human-readable notes."""
-    if not chat.is_active or not chat.can_post:
-        raise PublishError(f"I can't post in {chat.name}: check my admin rights there.",
-                           lost_access=True)
+    """Render and send `post` to `chat`. Returns the record and human-readable notes."""
+    ensure_can_post(chat)
     variation = variation or pick_variation(post)
-    use_custom = chat.custom_emoji_ok is not False
-    rendered = await render_variation(session, owner_id, post, variation, catalog, library,
-                                      custom_emoji=use_custom, chat_title=chat.title,
-                                      consume_pools=True)
+    rendered = await render_for_chat(session, owner_id, post, chat, variation, catalog, library)
+    return await deliver(bot, session, owner_id, post, chat, rendered, variation.idx, queue)
+
+
+async def deliver(
+    bot: Bot, session: AsyncSession, owner_id: int, post: Post, chat: Chat,
+    rendered: Rendered, variation_idx: int | None, queue: SendQueue,
+) -> tuple[PublishedPost, list[str]]:
+    """Send already-rendered HTML (e.g. an approved run) and record it."""
+    ensure_can_post(chat)
     length = check_length(rendered.html, post.has_media)
     if not length.ok:
         raise PublishError(f"The text is {length.length} characters; the limit here is "
@@ -173,7 +213,7 @@ async def publish(
     notes: list[str] = []
     try:
         message = await send_rendered(
-            bot, chat.tg_chat_id, rendered.html, media_kind=post.media_kind,
+            bot, queue, chat.tg_chat_id, rendered.html, media_kind=post.media_kind,
             media_file_id=post.media_file_id, buttons=post.buttons, silent=post.silent,
             link_preview=post.link_preview)
     except TelegramForbiddenError as exc:
@@ -182,6 +222,8 @@ async def publish(
     except TelegramBadRequest as exc:
         lost = "not enough rights" in exc.message or "chat not found" in exc.message
         raise PublishError(f"Telegram rejected the post: {exc.message}", lost_access=lost) from exc
+    except (TelegramRetryAfter, TelegramNetworkError, TelegramServerError) as exc:
+        raise PublishError(f"Telegram kept failing after several retries: {exc}") from exc
 
     if rendered.has_custom_emoji:
         kept = has_custom_emoji(message)
@@ -194,24 +236,25 @@ async def publish(
     pinned = False
     if post.pin:
         try:
-            await bot.pin_chat_message(chat.tg_chat_id, message.message_id,
-                                       disable_notification=post.silent)
+            await queue.run(chat.tg_chat_id, lambda: bot.pin_chat_message(
+                chat.tg_chat_id, message.message_id, disable_notification=post.silent))
             pinned = True
         except TelegramAPIError as exc:
             notes.append(f"Couldn't pin: {getattr(exc, 'message', str(exc))}")
 
     record = PublishedPost(
         owner_id=owner_id, post_id=post.id, chat_id=chat.id, tg_chat_id=chat.tg_chat_id,
-        message_id=message.message_id, variation_idx=variation.idx, media_kind=post.media_kind,
+        message_id=message.message_id, variation_idx=variation_idx, media_kind=post.media_kind,
         html=rendered.html, buttons=list(post.buttons),
         custom_emoji_used=rendered.has_custom_emoji and has_custom_emoji(message),
         pinned=pinned, sent_at=datetime.now(UTC),
     )
     session.add(record)
-    post.last_variation_index = variation.idx
+    if variation_idx is not None:
+        post.last_variation_index = variation_idx
     await session.flush()
     log.info("published", post_id=post.id, chat_id=chat.tg_chat_id,
-             message_id=message.message_id, variation=variation.idx)
+             message_id=message.message_id, variation=variation_idx)
     return record, notes
 
 

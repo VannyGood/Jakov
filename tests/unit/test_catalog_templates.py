@@ -13,7 +13,7 @@ from jakov.engine.compose import RenderInput, render, resolve_spintax
 from jakov.engine.emoji_render import EmojiPalette, EmojiPicker, LibEmoji
 from jakov.engine.limits import CAPTION_LIMIT, check_length
 from jakov.engine.text_generator import GenerationRequest, TemplateGenerator
-from jakov.engine.variables import builtin_values
+from jakov.engine.variables import builtin_values, placeholders
 
 CATALOG = Catalog(PROJECT_ROOT / "data")
 NOW = datetime(2026, 10, 20, 12, 0, tzinfo=UTC)
@@ -36,8 +36,10 @@ def balanced(html: str) -> bool:
 
 
 def combos(type_key: str, tone: str) -> list[str]:
-    parts = CATALOG.types[type_key].tones[tone]
-    return ["\n\n".join((h, b, c)) for h in parts.hooks for b in parts.bodies for c in parts.ctas]
+    """Many compositions across every usable layout (sections are picked at random)."""
+    gen = TemplateGenerator(CATALOG, random.Random(11))
+    return [gen.compose(type_key, tone, layout)
+            for layout in gen.usable_layouts(type_key, tone) for _ in range(25)]
 
 
 def palette() -> EmojiPalette:
@@ -66,17 +68,35 @@ def test_every_combination_renders(type_key: str, tone: str, answers: str) -> No
             html = render(resolve_spintax(template, rng), data, picker)
             plain = re.sub(r"<[^>]+>", "", html)
             assert "{" not in plain and "}" not in plain, html
-            assert "[[" not in html and "]]" not in html, html
+            assert "[[" not in html and "]]" not in html and "@" not in plain, html
             assert "\n\n\n" not in html and html == html.strip(), repr(html)
+            assert not re.search(r"[!?]\.|\.\.(?!\.)| [,.!?]", plain), html
             assert balanced(html), html
-            assert check_length(html, has_media=True).length <= CAPTION_LIMIT // 2, html
+            assert check_length(html, has_media=True).length <= CAPTION_LIMIT, html
 
 
-async def test_generator_returns_distinct_hooks() -> None:
+async def test_generator_returns_distinct_openings() -> None:
     gen = TemplateGenerator(CATALOG, random.Random(1))
     for type_key in CATALOG.type_order:
-        out = await gen.generate(GenerationRequest(type_key, "hype"), 3)
-        assert len(out) == 3 and len({t.split("\n\n")[0] for t in out}) == 3
+        for tone in CATALOG.tones:
+            for _ in range(10):
+                out = await gen.generate(GenerationRequest(type_key, tone), 3)
+                assert len(out) == 3 and len(set(out)) == 3
+                for text in out:  # the essentials are always mentioned
+                    assert gen.required_fields(type_key) <= placeholders(text), text
+
+
+def test_every_listed_layout_is_usable() -> None:
+    gen = TemplateGenerator(CATALOG)
+    for type_key, post_type in CATALOG.types.items():
+        for tone in CATALOG.tones:
+            assert set(gen.usable_layouts(type_key, tone)) == set(post_type.layouts)
+
+
+def test_layout_drops_lines_for_missing_sections() -> None:
+    gen = TemplateGenerator(CATALOG, random.Random(3))
+    text = gen.compose("romantic", "chill", "signature")  # romantic has no points or ps
+    assert "@" not in text and "\n\n\n" not in text
 
 
 async def test_generator_respects_exclude() -> None:

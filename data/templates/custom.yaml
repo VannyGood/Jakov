@@ -1,69 +1,87 @@
 type: custom
 title: "✏️ Custom"
 palette: [star, sparkles, point, check]
+layouts: [classic, story]
 questions:
   - key: topic
     prompt: "✏️ What's the post about? (a short title)"
     required: true
-    max_len: 120
+    max_len: 100
   - key: message
     prompt: "📝 The main message (what you want to say):"
     required: true
-    max_len: 800
+    max_len: 700
   - key: cta
-    prompt: "👉 Call to action? (e.g. <i>Comment below</i>) — or skip"
+    prompt: "👉 Call to action? (e.g. <i>Comment below</i>), or skip"
     required: false
-    max_len: 160
+    max_len: 120
 tones:
   hype:
-    hooks:
+    headline:
       - "{emoji} <b>{topic}</b> {emoji}"
       - "{emoji:fire} <b>{topic}</b>{!|!!} {emoji:rocket}"
       - "{emoji:hype} <b>{Listen up|Check this out|You need to see this}: {topic}</b>"
-    bodies:
-      - "{message} {emoji}"
-      - "{message}\n\n{This is big|Let's go|Hyped} {emoji:fire}"
-      - "{emoji:star} {message}"
-    ctas:
-      - "[[{emoji:point} <b>{cta}</b>]]"
-      - "[[{emoji:point} {cta} {emoji:fire}]]"
-      - "[[{emoji:megaphone} {cta}!]]"
-  chill:
-    hooks:
-      - "{emoji} <b>{topic}</b>"
-      - "{emoji:sparkles} {topic}"
-      - "{emoji:wave} {Hey|Hi}, {quick one|something new}: <b>{topic}</b>"
-    bodies:
+    intro:
       - "{message}"
-      - "{message} {emoji}"
-      - "{emoji:chill} {message}"
-    ctas:
+      - "{Here's the deal|Here it is|Straight to the point}: {message}"
+    body:
+      - "{This is big|Let's go|We're hyped}! {emoji:fire}"
+      - "{Don't sleep on this|You'll want to remember this one|Big energy only}. {emoji:star}"
+    closing:
+      - "{Go big or go home|The moment is now}."
+      - "{Energy is everything|Make it count}."
+    cta:
+      - "[[{emoji:point} <b>{cta}</b>]]"
+      - "[[{emoji:point} {cta}! {emoji:fire}]]"
+      - "[[{emoji:megaphone} {cta}!]]"
+      - "{emoji:rocket} {Let's go|Let's make it happen}!"
+  chill:
+    headline:
+      - "{emoji} <b>{topic}</b>"
+      - "{emoji:sparkles} <b>{topic}</b>"
+      - "{emoji:wave} <b>{Hey|Hi}, {quick one|something new}: {topic}</b>"
+    intro:
+      - "{message}"
+      - "{A quick thought|Just sharing}: {message}"
+    body:
+      - "{That's all|Short and sweet}. {emoji}"
+      - "{Thanks for reading|Have a good one}. {emoji:sparkles}"
+    closing:
+      - "{Keep it simple|Small things matter}."
+    cta:
       - "[[{cta} {emoji}]]"
       - "[[{emoji:point} {cta}]]"
-      - "[[{cta}]]"
+      - "{emoji:wave}"
   funny:
-    hooks:
+    headline:
       - "{emoji:laugh} <b>{topic}</b> {(you're welcome)|(no refunds)|(read till the end)}"
-      - "{emoji:eyes} {Stop scrolling|Hold on|Wait for it}: <b>{topic}</b>"
+      - "{emoji:eyes} <b>{Stop scrolling|Hold on|Wait for it}: {topic}</b>"
       - "{emoji:devil} <b>{topic}</b>"
-    bodies:
-      - "{message} {emoji:laugh}"
-      - "{message}\n\n{That's it. That's the post|We'll see ourselves out|Okay bye} {emoji:ghost}"
-      - "{message} {emoji}"
-    ctas:
+    intro:
+      - "{message}"
+      - "{Okay, hear me out|Plot twist|Brace yourself}: {message}"
+    body:
+      - "{That's it. That's the post|We'll see ourselves out|Okay, bye}. {emoji:ghost}"
+      - "{No further questions|Mic drop}. {emoji:laugh}"
+    closing:
+      - "{You read this far, so you're legally required to react|Some posts are meant to be remembered. This is one of them}."
+    cta:
       - "[[{emoji:point} {cta} (or else {emoji:devil})]]"
       - "[[{emoji:point} {cta}]]"
-      - "[[{cta} {emoji:laugh}]]"
+      - "{emoji:laugh}"
   serious:
-    hooks:
+    headline:
       - "{emoji:info} <b>{topic}</b>"
       - "{emoji:serious} <b>{topic}</b>"
       - "{emoji:point} <b>{topic}</b>"
-    bodies:
+    intro:
       - "{message}"
-      - "{message}"
-      - "{emoji:check} {message}"
-    ctas:
+    body:
+      - "{Thank you for your attention|Thank you for reading}."
+      - "{We appreciate your time|Thank you}."
+    closing:
+      - "{Clarity first|Quality over quantity}."
+    cta:
       - "[[{emoji:point} {cta}]]"
       - "[[{emoji:check} {cta}.]]"
-      - "[[{cta}]]"
+      - "{emoji:check}"

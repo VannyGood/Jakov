@@ -1,69 +1,118 @@
 type: announcement
 title: "📣 Announcement"
 palette: [megaphone, news, info, point, check]
+layouts: [classic, spotlight, story, punchy, signature]
 questions:
   - key: topic
-    prompt: "📣 Headline / what's it about?"
+    prompt: "📣 Headline: what's it about?"
     required: true
-    max_len: 120
+    max_len: 100
   - key: details
     prompt: "📝 Details (one or two sentences):"
     required: false
-    max_len: 600
+    max_len: 500
   - key: when
-    prompt: "📅 Is there a date? (e.g. <i>monday 10:00</i>, <i>01.11</i>) — or skip"
+    prompt: "📅 Is there a date? (e.g. <i>monday 10:00</i>, <i>01.11</i>), or skip"
     kind: datetime
     required: false
+points:
+  - "{emoji:megaphone} <b>What:</b> {topic}"
+  - "[[{emoji:calendar} <b>When:</b> {when}]]"
+  - "[[{emoji:clock} <b>Countdown:</b> {countdown}]]"
 tones:
   hype:
-    hooks:
-      - "{emoji:megaphone} <b>{BIG NEWS|HUGE ANNOUNCEMENT|IT'S OFFICIAL}!</b> {emoji:fire}"
+    headline:
+      - "{emoji:megaphone} <b>{BIG NEWS|HUGE ANNOUNCEMENT|IT'S OFFICIAL}</b> {emoji:fire}"
       - "{emoji:hype} <b>{topic}</b> {emoji:rocket}"
-      - "{emoji:warning} <b>{Attention everyone|Listen up|Heads up}!</b> {emoji:megaphone}"
-    bodies:
-      - "<b>{topic}</b>{!|!!| and we can't wait!} {emoji:party}[[\n\n{details}]]"
-      - "{We're thrilled to announce|We're excited to share|Finally}: <b>{topic}</b> {emoji:star}[[\n\n{details}]]"
-      - "[[{details}\n\n]]{This is huge|You don't want to miss this|Game changer} {emoji:fire}"
-    ctas:
+      - "{emoji:warning} <b>{Attention everyone|Listen up|Heads up}!</b>"
+      - "{emoji:star} <b>{We've been waiting to say this|This is the moment|The secret's out}…</b>"
+    intro:
+      - "{We're thrilled to announce|We're excited to share|Finally, we can tell you}: <b>{topic}</b>!"
+      - "{It's happening|It's official|It's real}: <b>{topic}</b>{, and we couldn't be more excited|, and you heard it here first|. Let that sink in}."
+      - "{Mark this day|Remember this moment|Save this post}: <b>{topic}</b>."
+      - "<b>{topic}</b>. {This changes everything|You don't want to miss this|Game changer}."
+    body:
+      - "[[{details} ]]{This has been a long time coming|We've worked hard on this|It's bigger than you think}, {and we can't wait for you to see it|and it's only the beginning|and the best part is still coming}. {emoji:party}"
+      - "[[{details}\n\n]]{Big things are coming|The future looks bright|We're just getting started}, {and you're part of it|and we want you on board|so stay close}. {emoji:star}"
+      - "{This is one of our biggest moments yet|This is a milestone for all of us|This one is special}[[: {details}]]. {emoji:fire}"
+    closing:
+      - "{The best is yet to come|Every big story starts with a single announcement}."
+      - "{New chapter, same energy|Onwards and upwards}."
+    action:
+      - "{emoji:megaphone} {Stay tuned|More soon|Spread the word}!"
+      - "{emoji:point} {Share this with your friends|Turn on notifications}! {emoji:fire}"
+    cta:
       - "[[{emoji:calendar} <b>{when}</b> ({countdown} to go)]]\n{Stay tuned|More soon|Spread the word}! {emoji:megaphone}"
       - "{emoji:point} {Share this with your friends|Turn on notifications|Don't miss the next update}!"
       - "[[{emoji:clock} {Mark your calendar|Save the date}: {when}]]\n{emoji:fire} {Let's go|Here we go}!"
+    ps:
+      - "P.S. {Notifications on, so you're the first to know|More details drop soon}. {emoji:megaphone}"
   chill:
-    hooks:
-      - "{emoji:wave} {Hey everyone|Hi all|Quick update}"
+    headline:
+      - "{emoji:wave} <b>{Quick update|A bit of news|Small update}</b>"
       - "{emoji:news} <b>{topic}</b>"
-      - "{emoji:sparkles} {Small update|A bit of news|Some news} for you"
-    bodies:
-      - "<b>{topic}</b>[[\n\n{details}]]"
-      - "{Just letting you know|FYI|In case you missed it}: <b>{topic}</b> {emoji:chill}[[\n{details}]]"
-      - "[[{details}\n\n]]{That's all for now|Nothing else to add|More soon} {emoji:cool}"
-    ctas:
+      - "{emoji:sparkles} <b>{Some news for you|Good to know|Heads-up}: {topic}</b>"
+    intro:
+      - "{Just letting you know|FYI|In case you missed it}: <b>{topic}</b>."
+      - "{A quick note|Something worth knowing|A small heads-up}: <b>{topic}</b>{. Nothing urgent, just good to know|, for everyone's information|}."
+      - "<b>{topic}</b>{, in short| is the news today| is happening}."
+    body:
+      - "[[{details} ]]{That's about it for now|Nothing else to add for the moment|We'll keep you posted}. {emoji:cool}"
+      - "[[{details}\n\n]]{Thanks for being here|Thanks for reading|Appreciate you all}. {emoji:sparkles}"
+      - "{Nothing complicated|Short and simple}[[: {details}]]. {emoji:chill}"
+    closing:
+      - "{Small steps, steady progress|Less noise, more good news}."
+      - "{Thanks for being part of this|Grateful for this community}."
+    action:
+      - "{Have a great day|Thanks for reading} {emoji:wave}"
+      - "{Questions? Just ask|Ping us anytime} {emoji:sparkles}"
+    cta:
       - "[[{emoji:calendar} {when}]]\n{Have a great day|Thanks for reading|Enjoy} {emoji:wave}"
-      - "[[{emoji:calendar} {when}]]"
       - "{Questions? Just ask|Ping us if anything's unclear} {emoji:sparkles}"
+      - "[[{emoji:calendar} {when} · ]]{See you around|Talk soon} {emoji:cool}"
   funny:
-    hooks:
-      - "{emoji:laugh} {Breaking news (actually important this time)|Stop scrolling|Plot twist}!"
-      - "{emoji:eyes} {Guess what|You won't believe this|Read this before your coffee}"
-      - "{emoji:megaphone} {Hear ye, hear ye|Attention, humans|This is not a drill}!"
-    bodies:
-      - "<b>{topic}</b>{. Yes, really| (we're as surprised as you)|. Act natural} {emoji:laugh}[[\n\n{details}]]"
-      - "[[{details}\n\n]]{Any questions? No? Great|Read it twice, it's important|That's it, that's the post} {emoji:ghost}"
-      - "{After much debate and three coffees|After a long meeting with ourselves|The council has decided}: <b>{topic}</b> {emoji:devil}[[\n{details}]]"
-    ctas:
-      - "[[{emoji:calendar} {when}, set an alarm, then another one]]\n{emoji:laugh}"
+    headline:
+      - "{emoji:laugh} <b>{Breaking news (actually important this time)|Stop scrolling|Plot twist}!</b>"
+      - "{emoji:eyes} <b>{Guess what|You won't believe this|Read this before your coffee}</b>"
+      - "{emoji:megaphone} <b>{Hear ye, hear ye|Attention, humans|This is not a drill}!</b>"
+    intro:
+      - "<b>{topic}</b>{. Yes, really| (we're as surprised as you)|. Act natural}."
+      - "{After much debate and three coffees|After a long meeting with ourselves|The council has decided}: <b>{topic}</b>."
+      - "{Grab a chair|Sit down|Hold onto something}: <b>{topic}</b>."
+    body:
+      - "[[{details} ]]{Any questions? No? Great|Read it twice, it's important|That's it, that's the post}. {emoji:ghost}"
+      - "[[{details}\n\n]]{We'd make a meme about it, but it's actually important|We tried to make this boring. We failed}. {emoji:laugh}"
+      - "{Our lawyers said we had to announce this properly|We were told to be professional about this}. {So: hello|Anyway}. {emoji:devil}"
+    closing:
+      - "{Keep calm and read the announcement|Knowledge is power. You're welcome}."
+      - "{Ignore at your own risk|Remember where you heard it first}."
+    action:
       - "{emoji:point} {Tell your mum|Tell your cat|Tell everyone}!"
-      - "[[{emoji:clock} {countdown} left to pretend you didn't see this]]"
+      - "{You've been informed|Consider yourself warned}. {emoji:eyes}"
+    cta:
+      - "[[{emoji:calendar} {when}: set an alarm, then another one.]]\n{emoji:laugh}"
+      - "{emoji:point} {Tell your mum|Tell your cat|Tell everyone}!"
+      - "[[{emoji:clock} {countdown} left to pretend you didn't see this.]]\n{emoji:eyes}"
   serious:
-    hooks:
+    headline:
       - "{emoji:info} <b>{Announcement|Notice|Update}</b>"
       - "{emoji:megaphone} <b>{topic}</b>"
-      - "{emoji:serious} <b>{Important|Official} {update|notice}</b>"
-    bodies:
-      - "<b>{topic}</b>[[\n\n{details}]]"
-      - "{We would like to inform you|Please note|Kindly be informed}: <b>{topic}</b>.[[\n\n{details}]]"
+      - "{emoji:serious} <b>{Important|Official} {update|notice}: {topic}</b>"
+    intro:
+      - "{We would like to inform you|Please note|Kindly be informed}: <b>{topic}</b>."
+      - "<b>{topic}</b>."
+      - "{We are writing to announce|This is to announce|We hereby announce}: <b>{topic}</b>."
+    body:
       - "[[{details}\n\n]]{Thank you for your attention|Thank you for your understanding}."
-    ctas:
-      - "[[{emoji:calendar} Date: <b>{when}</b>]]"
-      - "[[{emoji:calendar} {when}]]\n{emoji:check} {Further details will follow|We will keep you updated}."
+      - "[[{details} ]]{Further information will be shared in due course|We will keep you updated as things progress}."
+      - "{Please read the details carefully|Please take note of the following}[[: {details}]]."
+    closing:
+      - "{Thank you for your continued trust|We appreciate your cooperation}."
+      - "{Transparency matters to us|We remain at your disposal}."
+    action:
+      - "{emoji:check} {Further details will follow|We will keep you updated}."
       - "{emoji:point} {Questions can be sent to the admins|Contact us with any questions}."
+    cta:
+      - "[[{emoji:calendar} <b>Date:</b> {when}]]\n{emoji:check} {Further details will follow|We will keep you updated}."
+      - "{emoji:point} {Questions can be sent to the admins|Contact us with any questions}."
+      - "[[{emoji:calendar} {when}. ]]{emoji:check} {Thank you|Noted with thanks}."

@@ -22,7 +22,8 @@ from jakov.config import Settings
 from jakov.context import AppContext, build_context
 from jakov.handlers import all_routers
 from jakov.services.emoji_capability import EmojiProbe
-from tests.conftest import ADMIN, TOKEN, FakeSession, tg_user
+from jakov.services.send_queue import SendQueue
+from tests.conftest import ADMIN, TOKEN, FakeSession, _no_sleep, tg_user
 from tests.factories import BOT_USER
 
 _ids = count(1)
@@ -34,6 +35,7 @@ def ctx(sessions: async_sessionmaker[AsyncSession]) -> AppContext:
                         timezone="UTC")
     ctx = build_context(settings, sessions)
     ctx.emoji_probe = EmojiProbe("P")
+    ctx.queue = SendQueue(sleep=_no_sleep)  # rate limits are tested separately
     return ctx
 
 

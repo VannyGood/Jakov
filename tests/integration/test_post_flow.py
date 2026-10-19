@@ -58,7 +58,7 @@ async def test_full_wizard_send_edit_delete(dp: Dispatcher, bot: Bot, fake_sessi
     post_previews = [m for m in previews if m.reply_markup and any(
         "Use this" in b.text for row in m.reply_markup.inline_keyboard for b in row)]
     assert len(post_previews) == 3
-    assert all("Air Max &lt;90&gt;" in m.text for m in post_previews)
+    assert all("air max &lt;90&gt;" in m.text.lower() for m in post_previews)  # escaped
     assert all(m.reply_markup.inline_keyboard[0][0].url == "https://shop.io"
                for m in post_previews)
     assert "3 variations" in texts[-1]
@@ -163,7 +163,11 @@ async def test_menus_are_animated_for_admin(dp: Dispatcher, bot: Bot, fake_sessi
     fake_session.calls.clear()
     await dp.feed_update(bot, button_update(MenuCb(to="main").pack()))
     edit = fake_session.called("EditMessageText")[-1]
-    assert 'emoji-id="555"' in edit.text  # "📡 Chats" line is animated
+    curated = ctx.catalog.ui_icons["📡"]
+    assert f'emoji-id="{curated}"' in edit.text  # curated Premium icon beats the pack
     buttons = [b for row in edit.reply_markup.inline_keyboard for b in row]
     channels = next(b for b in buttons if b.text == "Channels")
-    assert channels.icon_custom_emoji_id == "555"
+    assert channels.icon_custom_emoji_id == curated
+    # Emoji without a curated icon come from the library.
+    assert ctx.library.ui_map(None)["📡"] == curated
+    assert ctx.library.ui_map("RestrictedEmoji")["📡"] == "555"  # a chosen pack wins

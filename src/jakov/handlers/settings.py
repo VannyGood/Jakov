@@ -48,14 +48,14 @@ async def _settings_text(session: AsyncSession, ctx: AppContext, user_id: int) -
     user = await UserRepo(session, ctx.owner_id).get(user_id)
     now_local = format_local(utcnow(), effective_zone(zone, ctx.settings.timezone))
     source = "your setting" if personal else "default from config"
-    menu_pack = (user.ui_emoji_pack if user else None) or ctx.library.default_ui_pack or "any"
+    menu_pack = (user.ui_emoji_pack if user else None) or "✨ Premium icons"
     animated = user.ui_animated if user else True
     return (
         "⚙️ <b>Settings</b>\n\n"
         f"🕒 Timezone: <b>{html.escape(zone)}</b> ({source})\n"
         f"    Local time now: {now_local}\n"
         f"✨ Custom emoji in DMs: {emoji_status(cap)}\n"
-        f"🎨 Animated menus: <b>{'on' if animated else 'off'}</b> · pack "
+        f"🎨 Animated menus: <b>{'on' if animated else 'off'}</b> · style "
         f"<b>{html.escape(menu_pack)}</b>"
     )
 
@@ -64,7 +64,8 @@ async def _show_settings(target: Message | CallbackQuery, session: AsyncSession,
                          ctx: AppContext, user_id: int, prefix: str = "") -> None:
     user = await UserRepo(session, ctx.owner_id).get(user_id)
     await show(target, prefix + await _settings_text(session, ctx, user_id),
-               settings_kb(user.ui_animated if user else True))
+               settings_kb(user.ui_animated if user else True,
+                           bool(user and user.ui_emoji_pack)))
 
 
 async def _save_zone(session: AsyncSession, ctx: AppContext, user_id: int, zone: str) -> None:
@@ -179,17 +180,23 @@ async def msg_location_other(message: Message) -> None:
                          reply_markup=location_request_kb())
 
 
-@router.callback_query(SettingsCb.filter(F.action == "ui_toggle"))
-async def cb_ui_toggle(callback: CallbackQuery, ctx: AppContext, session: AsyncSession) -> None:
+@router.callback_query(SettingsCb.filter(F.action.in_({"ui_toggle", "ui_premium"})))
+async def cb_ui_toggle(callback: CallbackQuery, callback_data: SettingsCb, ctx: AppContext,
+                       session: AsyncSession) -> None:
     user = await UserRepo(session, ctx.owner_id).get(callback.from_user.id)
     if user is None:
         await callback.answer("Send /start first.", show_alert=True)
         return
-    user.ui_animated = not user.ui_animated
+    if callback_data.action == "ui_premium":
+        user.ui_emoji_pack = None
+        note = "Premium menu icons ✨"
+    else:
+        user.ui_animated = not user.ui_animated
+        note = "Animated menus " + ("on ✨" if user.ui_animated else "off")
     await session.commit()
     await ctx.ui.load(ctx.sessions, ctx.owner_id)
     await _show_settings(callback, session, ctx, callback.from_user.id)
-    await callback.answer("Animated menus " + ("on ✨" if user.ui_animated else "off"))
+    await callback.answer(note)
 
 
 @router.callback_query(SettingsCb.filter(F.action == "emoji_test"))

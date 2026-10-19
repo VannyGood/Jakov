@@ -1,0 +1,41 @@
+# Post layouts. "@section" is replaced by a line from the post type's tone section;
+# a layout line whose sections are all empty disappears. Blank lines separate paragraphs.
+# Sections: headline, intro, body, points (bullet facts), closing, cta, action, ps.
+# `action` is a call to action without facts, for layouts that already list them as points;
+# it falls back to `cta` when a tone doesn't define it.
+classic: |
+  @headline
+
+  @intro @body
+
+  @cta
+spotlight: |
+  @headline
+
+  @intro
+
+  @points
+
+  @action
+story: |
+  @intro
+
+  @body
+
+  <blockquote>@closing</blockquote>
+
+  @cta
+punchy: |
+  @headline
+  @cta
+signature: |
+  @headline
+
+  @body
+
+  @points
+
+  <i>@closing</i>
+  @action
+
+  @ps

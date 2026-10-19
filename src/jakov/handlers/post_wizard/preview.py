@@ -85,7 +85,7 @@ async def show_previews(target: Message | CallbackQuery, bot: Bot, post: Post, c
                                           ctx.library, custom_emoji=ctx.ui.dm_supported)
         try:
             message = await send_rendered(
-                bot, chat_id, rendered.html, media_kind=post.media_kind,
+                bot, ctx.queue, chat_id, rendered.html, media_kind=post.media_kind,
                 media_file_id=post.media_file_id, buttons=post.buttons,
                 link_preview=post.link_preview,
                 extra_rows=preview_extra_rows(post, variation.idx))
@@ -302,7 +302,7 @@ async def cb_sendgo(callback: CallbackQuery, callback_data: PostCb, bot: Bot, ct
     await callback.answer("Sending…")
     try:
         record, notes = await publish(bot, session, ctx.owner_id, post, chat, ctx.catalog,
-                                      ctx.library)
+                                      ctx.library, ctx.queue)
     except PublishError as exc:
         hint = "\n\nOpen 📡 Channels → the chat → 🔄 Re-check rights." if exc.lost_access else ""
         await show(callback, f"⚠️ {html.escape(str(exc))}{hint}", ready_kb(post))

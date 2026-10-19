@@ -19,7 +19,7 @@ class ChannelCb(CallbackData, prefix="ch"):
 
 
 class SettingsCb(CallbackData, prefix="st"):
-    action: str  # tz | tz_list | tz_pick | tz_type | tz_loc | emoji_test | ui_toggle
+    action: str  # tz | tz_list | tz_pick | tz_type | tz_loc | emoji_test | ui_toggle | ui_premium
     value: int = 0
 
 
@@ -45,3 +45,17 @@ class EmojiCb(CallbackData, prefix="e"):
     pk: int = 0
     page: int = 0
     value: int = 0
+
+
+class SchCb(CallbackData, prefix="s"):
+    # Wizard: new | chat | kind | once | daily | daily_type | every | every_type | first
+    #   | limit | opt_rotate | opt_approval | summary | confirm | retime
+    # Manage: list | open | pause | resume | sendnow | edit | delete | delete_go | history
+    action: str
+    pk: int = 0
+    value: int = 0
+
+
+class ApCb(CallbackData, prefix="ap"):
+    action: str  # approve | skip | edit
+    pk: int = 0

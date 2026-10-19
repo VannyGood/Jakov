@@ -23,7 +23,7 @@ def localize(naive: datetime, zone: ZoneInfo) -> datetime:
     return naive.replace(tzinfo=zone, fold=0).astimezone(UTC)
 
 
-def _parse_clock(text: str) -> time | None:
+def parse_clock(text: str) -> time | None:
     m = re.fullmatch(r"(\d{1,2})(?::|\.|h)?(\d{2})?\s*(am|pm)?", text.strip())
     if not m:
         return None
@@ -94,13 +94,13 @@ def parse_when(text: str, now_local: datetime) -> datetime:
     parts = raw.split(" ")
     clock: time | None = None
     day: date | None = None
-    if len(parts) >= 2 and (clock := _parse_clock(" ".join(parts[1:]))):
+    if len(parts) >= 2 and (clock := parse_clock(" ".join(parts[1:]))):
         day = _parse_date(parts[0], now_local.date())
-    elif len(parts) >= 2 and (clock := _parse_clock(parts[-1])):
+    elif len(parts) >= 2 and (clock := parse_clock(parts[-1])):
         day = _parse_date(" ".join(parts[:-1]), now_local.date())
     elif len(parts) == 1 and (day := _parse_date(raw, now_local.date())):
         clock = time(23, 59)
-    elif clock := _parse_clock(raw):
+    elif clock := parse_clock(raw):
         day = now_local.date()
         if datetime.combine(day, clock) <= now_local.replace(tzinfo=None):
             day += timedelta(days=1)

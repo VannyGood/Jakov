@@ -161,6 +161,9 @@ class EmojiLibrary:
 
     moods: Mapping[str, Sequence[str]]
     default_ui_pack: str | None = None
+    # Curated menu icons (data/ui_icons.yaml): used first in the default "Premium" style.
+    ui_icons: Mapping[str, str] = field(default_factory=dict)
+    base_packs: frozenset[str] = frozenset()
     palette: EmojiPalette = field(init=False)
     _ui_maps: dict[str | None, dict[str, str]] = field(default_factory=dict, init=False)
     _items: list[LibEmoji] = field(default_factory=list, init=False)
@@ -176,7 +179,7 @@ class EmojiLibrary:
             for i in items if i.is_active
         ]
         self._items = lib
-        self.palette = EmojiPalette(self.moods, lib)
+        self.palette = EmojiPalette(self.moods, lib, self.base_packs)
         self._ui_maps.clear()
 
     async def reload(self, sessions: async_sessionmaker[AsyncSession], owner_id: int) -> None:
@@ -191,15 +194,24 @@ class EmojiLibrary:
         return sorted({e.pack for e in self._items if e.pack})
 
     def ui_map(self, pack: str | None) -> dict[str, str]:
-        """Plain emoji -> custom id for menus: preferred pack first, then default, then any."""
+        """Plain emoji -> custom id for menus.
+
+        pack=None is the default "Premium" style: curated icons, then the default pack,
+        then any animated emoji. A chosen pack goes first, curated icons fill its gaps.
+        """
         if pack in self._ui_maps:
             return self._ui_maps[pack]
-        order = [p for p in (pack, self.default_ui_pack) if p]
         mapping: dict[str, str] = {}
-        for preferred in order:
+        curated = {normalize_emoji(k): v for k, v in self.ui_icons.items()}
+        if pack is None:
+            mapping.update(curated)
+        for preferred in [p for p in (pack, self.default_ui_pack) if p]:
             for e in self._items:
                 if e.pack == preferred and e.animated:
                     mapping.setdefault(normalize_emoji(e.fallback), e.custom_emoji_id)
+            if preferred == pack:
+                for key, value in curated.items():
+                    mapping.setdefault(key, value)
         for e in self._items:
             if e.animated:
                 mapping.setdefault(normalize_emoji(e.fallback), e.custom_emoji_id)

@@ -17,12 +17,15 @@ SHARE_LOCATION_TEXT = "📍 Send my location"
 CANCEL_TEXT = "✖️ Cancel"
 
 
-def settings_kb(ui_animated: bool = True) -> InlineKeyboardMarkup:
+def settings_kb(ui_animated: bool = True, custom_pack: bool = False) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     kb.button(text="🕒 Timezone", callback_data=SettingsCb(action="tz"))
     kb.button(text=f"🎨 Animated menus: {'On' if ui_animated else 'Off'}",
               callback_data=SettingsCb(action="ui_toggle"))
-    kb.button(text="📦 Menu emoji pack", callback_data=EmojiCb(action="packs"))
+    if custom_pack:
+        kb.button(text="✨ Back to Premium menu icons",
+                  callback_data=SettingsCb(action="ui_premium"))
+    kb.button(text="📦 Menu style from a pack", callback_data=EmojiCb(action="packs"))
     kb.button(text="🧪 Custom emoji test", callback_data=SettingsCb(action="emoji_test"))
     kb.button(text="⬅️ Back", callback_data=MenuCb(to="main"))
     kb.adjust(1)

@@ -95,5 +95,16 @@ def bot(fake_session: FakeSession) -> Bot:
     return Bot(TOKEN, session=fake_session, default=DefaultBotProperties(parse_mode="HTML"))
 
 
+async def _no_sleep(_: float) -> None:
+    return None
+
+
+@pytest.fixture
+def queue() -> Any:
+    from jakov.services.send_queue import SendQueue
+
+    return SendQueue(sleep=_no_sleep)
+
+
 def tg_user(user_id: int = ADMIN, name: str = "Admin") -> User:
     return User(id=user_id, is_bot=False, first_name=name)

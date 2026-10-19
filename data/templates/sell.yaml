@@ -1,11 +1,12 @@
 type: sell
 title: "🛒 Sell something"
-palette: [money, cart, sale, fire, diamond]
+palette: [money, cart, sale, diamond, fire]
+layouts: [classic, spotlight, story, punchy, signature]
 questions:
   - key: product
     prompt: "🛒 What are you selling?"
     required: true
-    max_len: 120
+    max_len: 80
   - key: price
     prompt: "💰 Price? (e.g. <i>$49</i>, <i>20 USDT</i>)"
     required: false
@@ -13,61 +14,132 @@ questions:
   - key: offer
     prompt: "🏷 Any special offer? (e.g. <i>-30% today only</i>, <i>free shipping</i>)"
     required: false
-    max_len: 160
+    max_len: 120
   - key: deadline
     prompt: "⏳ Offer deadline? (e.g. <i>sunday 23:59</i>, <i>25.12</i>, <i>in 3 days</i>)"
     kind: datetime
     required: false
+points:
+  - "{emoji:cart} <b>{product}</b>"
+  - "[[{emoji:money} <b>Price:</b> {price}]]"
+  - "[[{emoji:sale} <b>Offer:</b> {offer}]]"
+  - "[[{emoji:clock} <b>Ends:</b> {deadline} · {countdown} left]]"
 tones:
   hype:
-    hooks:
-      - "{emoji:fire} <b>{SALE ALERT|HOT DROP|DEAL OF THE DAY|DON'T MISS THIS}!</b> {emoji:fire}"
-      - "{emoji:money} <b>{product}</b> {is HERE|just dropped|is back in stock}! {emoji:rocket}"
-      - "{emoji:hype} <b>{You asked, we delivered|The wait is over|It's finally happening}!</b>"
-    bodies:
-      - "<b>{product}</b>{, the one everyone's talking about|, built to impress|, made for winners}! {emoji:diamond}\n[[{emoji:money} {Only|Just|Now} <b>{price}</b>]]"
-      - "{Get your hands on|Grab|Secure} <b>{product}</b> {before it's gone|while stocks last|right now} {emoji:cart}\n[[{emoji:sale} <b>{offer}</b>]]"
-      - "[[{emoji:sale} <b>{offer}</b> on ]]<b>{product}</b>{!|!!|, today}\n[[{emoji:money} Price: <b>{price}</b>]]"
-    ctas:
-      - "[[{emoji:clock} {Ends|Offer ends} <b>{deadline}</b>: only {countdown} left!]]\n{emoji:point} {Order now|DM to buy|Tap below} {emoji:fire}"
-      - "[[{emoji:warning} {Hurry|Quick}! {countdown} left]]\n{emoji:cart} {Don't sleep on this|First come, first served|Limited stock}!"
-      - "{emoji:point} <b>{Buy now|Get yours|Claim it}</b>{ before it sells out|!|, you won't regret it}\n[[{emoji:clock} Until {deadline}]]"
+    headline:
+      - "{emoji:fire} <b>{SALE ALERT|HOT DROP|DEAL OF THE WEEK|DON'T MISS THIS}</b> {emoji:fire}"
+      - "{emoji:money} <b>{product}</b> {just dropped|is finally here|is back in stock} {emoji:rocket}"
+      - "{emoji:hype} <b>{You asked. We delivered|The wait is over|It's finally happening}.</b>"
+      - "{emoji:diamond} <b>{product.upper}</b>[[ · {offer}]]"
+      - "{emoji:warning} <b>{Limited stock|Going fast|Almost sold out}: {product}</b>"
+    intro:
+      - "{Meet|Say hello to|Introducing} <b>{product}</b>: {the upgrade you didn't know you needed|built to impress, priced to move|the one everyone's been asking about}."
+      - "{This is the one|This is it|Here it is}. <b>{product}</b>{, ready to ship| is live| is up for grabs}, and {it won't last long|stock is moving fast|the first buyers are already in}."
+      - "{If you've been waiting for a sign|If you've had your eye on it|If you snooze on this one}, {this is it|now's the moment|you'll regret it}: <b>{product}</b>[[ for just <b>{price}</b>]]."
+      - "{Quality you can feel|Value you can see|Style you can't fake}. <b>{product}</b> {delivers on every level|sets a new standard|speaks for itself}."
+      - "[[<b>{offer}</b> on ]]<b>{product}</b>{, starting right now|, today only| while it lasts}."
+    body:
+      - "{It's the kind of deal|It's the kind of drop|This is the kind of offer} that {disappears overnight|people talk about for weeks|sells out before the hype settles}[[, and right now it's <b>{price}</b>]]. {emoji:money}"
+      - "{Premium quality|Top-tier quality|Serious quality} without the {premium price tag|markup|nonsense}[[, and with <b>{offer}</b> it gets even better]]. {emoji:diamond}"
+      - "{Smart buyers|The early birds|The ones who know} {are already in|have already ordered|moved first}. {Don't be the one who says \"I should have\"|Join them before it's gone|Your turn}. {emoji:rocket}"
+      - "{Designed to last|Made to stand out|Built for people who want the best}, <b>{product}</b> {is worth every cent|pays for itself|is a no-brainer}. {emoji:check}"
+      - "[[{emoji:sale} <b>{offer}</b>: ]]{the best price we've ever offered|a deal this good doesn't come twice|stock is limited and moving fast}."
+    closing:
+      - "{Good things go fast. Great deals go faster|Hesitation is the most expensive habit}."
+      - "{Buy once, smile every time|Treat yourself. You've earned it}."
+      - "{The best time to buy was yesterday. The second best is now|Fortune favours the fast}."
+    action:
+      - "{emoji:point} <b>{Order now|DM us to buy|Tap below to grab yours}</b> {emoji:fire}"
+      - "{emoji:cart} <b>{Secure yours now|Grab it while you can|Lock in this deal}</b>{!| before it's gone!}"
+      - "{emoji:rocket} {First come, first served|Limited stock|Don't sleep on this}. <b>{Order today|Get yours now}</b>!"
+    cta:
+      - "[[{emoji:clock} {Ends|Offer ends} <b>{deadline}</b>: only {countdown} left!]]\n{emoji:point} <b>{Order now|DM us to buy|Tap below to grab yours}</b> {emoji:fire}"
+      - "[[{emoji:warning} {Hurry|Quick}! {countdown} left.]]\n{emoji:cart} {First come, first served|Limited stock|Don't sleep on this}!"
+      - "{emoji:point} <b>{Buy now|Get yours|Claim it}</b>{ before it sells out|, you won't regret it|, today}[[ · until {deadline}]]"
+      - "{emoji:megaphone} {DM us|Message us|Tap the button} {to order|to reserve yours|for details}[[, <b>{price}</b>]]. {emoji:money}"
+      - "{emoji:fire} <b>{Secure yours now|Grab it while you can|Lock in this deal}</b>[[: {countdown} to go]]."
+    ps:
+      - "P.S. {Stock updates are posted here first|Turn on notifications for the next drop}. {emoji:megaphone}"
+      - "P.S. {Share this with a friend who needs it|Tag someone who'd love this}. {emoji:point}"
   chill:
-    hooks:
-      - "{emoji:sparkles} {Something nice|A little something|New in} {for you|in the shop|today}"
-      - "{emoji:cool} {Fresh pick|New arrival|Just listed}: <b>{product}</b>"
-      - "{emoji:chill} {Treat yourself|Have a look|In case you need it}"
-    bodies:
-      - "<b>{product}</b>{ is available| is ready to go| is up for grabs}[[ for <b>{price}</b>]] {emoji:cart}"
-      - "{We think you'll like|You might enjoy|Have a look at} <b>{product}</b> {emoji:sparkles}[[\n{offer}]]"
-      - "<b>{product}</b>[[ · {price}]][[ · {offer}]]"
-    ctas:
-      - "[[{emoji:calendar} {Available until|Offer runs until} {deadline}]]\n{Message us|DM us|Tap below} {if you're interested|anytime} {emoji:wave}"
-      - "{No rush|Take your time}[[, the offer runs until {deadline}]] {emoji:chill}"
-      - "{emoji:point} {Details below|More info below|Ask us anything}"
+    headline:
+      - "{emoji:sparkles} <b>{New in|Just listed|Fresh arrival}: {product}</b>"
+      - "{emoji:cool} <b>{product}</b>[[ · {price}]]"
+      - "{emoji:chill} <b>{A little something|Something nice|Worth a look}</b>"
+      - "{emoji:cart} <b>{product}</b>, {now available|ready when you are|in stock}"
+    intro:
+      - "{We think you'll like|You might enjoy|Have a look at} <b>{product}</b>{. No rush, no pressure| when you have a minute|, it's a good one}."
+      - "<b>{product}</b> {is available|is ready to go|just landed}[[ for <b>{price}</b>]], {in case you've been looking|if you need one|for anyone who's interested}."
+      - "{Treat yourself|Have a browse|Take your time}: <b>{product}</b>{ is here| is up for grabs| is waiting for you}."
+      - "{Simple, good and fairly priced|Quality without the hype|Honest product, honest price}: <b>{product}</b>."
+    body:
+      - "{It does exactly what it should|It's well made and easy to love|It's one of those things you'll use every day}[[, and right now there's <b>{offer}</b>]]. {emoji:sparkles}"
+      - "{No gimmicks|No hard sell|Nothing complicated}: {a good product at a fair price|quality you can rely on|just something we think is worth having}. {emoji:check}"
+      - "[[{offer}, ]]{for anyone who wants it|if it's useful to you|while it lasts}. {emoji:chill}"
+      - "{We only list things we'd use ourselves|We pick everything carefully|We keep it simple}, and <b>{product}</b> {made the cut|is a favourite|is no exception}. {emoji:cool}"
+    closing:
+      - "{Good things, fairly priced|Less noise, better stuff}."
+      - "{Buy what you love, love what you buy|Simple pleasures are the best}."
+    action:
+      - "{Message us|DM us|Tap below} {if you're interested|anytime} {emoji:wave}"
+      - "{No rush|Take your time}: {we're here when you're ready|just send us a message}. {emoji:chill}"
+    cta:
+      - "[[{emoji:calendar} {Available until|Offer runs until} {deadline}.]]\n{Message us|DM us|Tap below} {if you're interested|anytime} {emoji:wave}"
+      - "{No rush|Take your time}[[: the offer runs until {deadline}]]. {emoji:chill}"
+      - "{emoji:point} {Details below|More info below|Ask us anything}[[ · {price}]]"
+      - "{emoji:wave} {Reply here|Send us a message} {and we'll sort it out|if you'd like one|for more details}."
+    ps:
+      - "P.S. {Happy to answer any questions|Shipping details on request}. {emoji:sparkles}"
   funny:
-    hooks:
-      - "{emoji:laugh} {Your wallet called|Your bank account is nervous|Budget? Never heard of it}"
-      - "{emoji:eyes} {Psst|Hey you|Yes, you}… {need|want|deserve} <b>{product}</b>?"
-      - "{emoji:devil} {Bad financial decision of the day|Impulse buy alert|Self-control test}"
-    bodies:
-      - "<b>{product}</b>: {because you deserve nice things|cheaper than therapy|your future self says thanks} {emoji:laugh}[[\n{emoji:money} {price} (we checked, it's worth it)]]"
-      - "{Scientists agree|Our cat agrees|Everyone agrees}: <b>{product}</b> {is a must|improves your life by 73%|is basically mandatory} {emoji:cat}[[\n{emoji:sale} {offer}]]"
-      - "{Buy|Get} <b>{product}</b>[[ for {price}]] {and|then} {tell everyone it was your idea|act surprised when it arrives|thank us later} {emoji:laugh}"
-    ctas:
-      - "[[{emoji:clock} Deal ends in {countdown}, panic responsibly]]\n{emoji:point} {Tap below|DM us} {emoji:laugh}"
-      - "[[{emoji:sale} {offer}]]\n{Quick, before your common sense kicks in|Hurry, before you change your mind}! {emoji:devil}"
-      - "{emoji:point} {Click below|DM us}. {We won't tell your wallet|Your secret is safe with us} {emoji:eyes}"
+    headline:
+      - "{emoji:laugh} <b>{Your wallet called|Your bank account is nervous|Budget? Never heard of her}</b>"
+      - "{emoji:eyes} <b>{Psst|Hey you|Yes, you}… {need|want|deserve} {product.a}?</b>"
+      - "{emoji:devil} <b>{Bad financial decision of the day|Impulse buy alert|Self-control test}: {product}</b>"
+      - "{emoji:money} <b>{product}</b>: {cheaper than therapy|better than your ex|scientifically awesome}"
+    intro:
+      - "<b>{product}</b>: {because you deserve nice things|cheaper than therapy|your future self says thanks}[[, and it's only <b>{price}</b> (we checked, it's worth it)]]."
+      - "{Scientists agree|Our cat agrees|Everyone agrees}: <b>{product}</b> {is a must|improves your life by 73%|is basically mandatory}."
+      - "{Stop scrolling|Put the phone down|Okay, one more scroll}: <b>{product}</b>{ is here| has entered the chat| needs a new home}."
+      - "{Do you need|Does anyone need|Does the world need} <b>{product}</b>? {Probably|Absolutely|Science says yes}."
+    body:
+      - "{Buy|Get} <b>{product}</b>[[ for {price}]] {and|then} {tell everyone it was your idea|act surprised when it arrives|thank us later}. {emoji:laugh}"
+      - "{Side effects may include|Warning: may cause} {happiness|compliments from strangers|sudden urges to show it off}. {emoji:eyes}"
+      - "[[{emoji:sale} {offer}. ]]{Yes, really|We double-checked|Our accountant is crying}. {emoji:devil}"
+      - "{We'd keep it ourselves, but|Our boss said we can't keep it, so|We tried to resist, but} {it has to go|you get the chance|here we are}. {emoji:laugh}"
+    closing:
+      - "{Money can't buy happiness, but it can buy this|Retail therapy is still therapy}."
+      - "{Treat yourself. Your wallet will recover|Adulting is hard. Shopping is easy}."
+    action:
+      - "{emoji:point} {Tap below|DM us}. {We won't tell your wallet|Your secret is safe with us}. {emoji:eyes}"
+      - "{emoji:money} {Order now and blame us later|Buy now, justify it later}. {emoji:laugh}"
+    cta:
+      - "[[{emoji:clock} Deal ends in {countdown}. Panic responsibly.]]\n{emoji:point} {Tap below|DM us} {emoji:laugh}"
+      - "[[{emoji:sale} {offer}. ]]{Quick, before your common sense kicks in|Hurry, before you change your mind}! {emoji:devil}"
+      - "{emoji:point} {Click below|DM us}. {We won't tell your wallet|Your secret is safe with us}. {emoji:eyes}"
+      - "{emoji:money} {Order now and blame us later|Buy it now, justify it later}[[, until {deadline}]]."
+    ps:
+      - "P.S. {No wallets were harmed in the making of this post|Your wallet will forgive you. Eventually}. {emoji:laugh}"
   serious:
-    hooks:
-      - "{emoji:info} <b>{Product|Offer|Sale} {announcement|update}</b>"
-      - "{emoji:cart} <b>{product}</b>: {now available|available for order|in stock}"
-      - "{emoji:serious} <b>{Special offer|Limited offer|Price update}</b>"
-    bodies:
-      - "<b>{product}</b>{ is now available for purchase| can be ordered today| is in stock}.[[\n{emoji:money} Price: <b>{price}</b>]]"
-      - "{We are pleased to offer|We now offer|Available now:} <b>{product}</b>.[[\n{emoji:sale} {offer}]]"
-      - "<b>{product}</b>[[\n{emoji:money} Price: {price}]][[\n{emoji:check} {offer}]]"
-    ctas:
-      - "[[{emoji:calendar} Valid until <b>{deadline}</b>.]]\n{emoji:point} {Contact us|Order|Reply} {to purchase|for details|to reserve yours}."
+    headline:
+      - "{emoji:info} <b>{Now available|New product|Available to order}: {product}</b>"
+      - "{emoji:serious} <b>{Special offer|Limited offer|Price update}</b>[[ · {offer}]]"
+      - "{emoji:cart} <b>{product}</b>"
+      - "{emoji:diamond} <b>{product}</b>: {premium quality|tested and trusted|built to last}"
+    intro:
+      - "{We are pleased to offer|We are pleased to introduce|Now available:} <b>{product}</b>."
+      - "<b>{product}</b> {is now available for purchase|can be ordered today|is in stock and ready to ship}."
+      - "{Following strong demand|Due to popular demand|As requested by our customers}, <b>{product}</b> {is available again|is back in stock|can now be ordered}."
+    body:
+      - "{Every item is checked before dispatch|Quality is our first priority|We stand behind everything we sell}[[, and the price is <b>{price}</b>]]."
+      - "[[{offer}. ]]{Orders are processed promptly|Fast, reliable delivery|Secure payment and dependable service}."
+      - "{Designed for reliability and long-term use|A dependable choice for everyday use|Excellent value for the quality}."
+    closing:
+      - "{Quality you can rely on|Trusted by our customers}."
+      - "{Thank you for your continued support|We appreciate your trust}."
+    action:
+      - "{emoji:point} {Contact us to purchase|Order via the button below|Reply to reserve yours}."
+      - "{emoji:check} {Orders are processed daily|Secure checkout and fast delivery}."
+    cta:
+      - "[[{emoji:calendar} Valid until <b>{deadline}</b>.]]\n{emoji:point} {Contact us to purchase|Order via the link below|Reply to reserve yours}."
       - "[[{emoji:clock} Time remaining: {countdown}.]]\n{emoji:check} {Orders are processed daily|Secure checkout|Fast delivery}."
-      - "{emoji:point} {For orders and questions, use the button below|Questions? Message us anytime}."
+      - "{emoji:point} {For orders and questions, use the button below|Questions? Message us anytime}[[ · {price}]]."

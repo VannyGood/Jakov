@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from time import monotonic
+from typing import TYPE_CHECKING
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -12,7 +13,11 @@ from jakov.engine.catalog import Catalog
 from jakov.engine.text_generator import TextGenerator
 from jakov.services.emoji_capability import EmojiProbe
 from jakov.services.emoji_library import EmojiLibrary
+from jakov.services.send_queue import SendQueue
 from jakov.services.ui_emoji import UiEmojiService
+
+if TYPE_CHECKING:
+    from jakov.services.scheduler import Scheduler
 
 
 @dataclass(slots=True)
@@ -24,6 +29,8 @@ class AppContext:
     library: EmojiLibrary
     ui: UiEmojiService
     generator: TextGenerator
+    queue: SendQueue = field(default_factory=SendQueue)
+    scheduler: Scheduler | None = None
     started_at: float = field(default_factory=monotonic)
     updates_handled: int = 0
 
@@ -49,9 +56,10 @@ def build_context(settings: Settings, sessions: async_sessionmaker[AsyncSession]
 
     catalog = Catalog(settings.data_dir)
     # Fail fast on broken data files.
-    _ = catalog.types, catalog.tones, catalog.pools, catalog.moods
-    starter = catalog.starter_packs
-    library = EmojiLibrary(catalog.moods, default_ui_pack=starter[0] if starter else None)
+    _ = catalog.types, catalog.tones, catalog.pools, catalog.moods, catalog.ui_icons
+    base = catalog.base_packs
+    library = EmojiLibrary(catalog.moods, default_ui_pack=base[0] if base else None,
+                           ui_icons=catalog.ui_icons, base_packs=frozenset(base))
     return AppContext(
         settings=settings,
         sessions=sessions,

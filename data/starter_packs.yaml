@@ -1,18 +1,26 @@
-# Custom emoji packs imported automatically when the emoji library is empty.
-# The first pack is the default style for animated menus (it mirrors standard emoji).
-- RestrictedEmoji
-- DogsEmoji
-- snoopdogg_emoji
-- SnoopDogEmoji
-- DuckEmoji
-- UtyaDuckEmoji
-- PepeEmoji
-- R2DOG2Emoji
-- SnowRabbitEmoji
-- JustWhiteCatEmoji
-- GameIcons
-- MovieIcons
-- TopicIcons
-- StatusEmoji
-- TStarsIcons
-- AdaptivePremium
+# Custom emoji packs imported automatically (new entries are imported on the next start).
+# `base` packs mirror standard emoji: used for menus and only as a last resort in posts,
+# so posts prefer the more expressive packs.
+showcase:
+  - NotoEmojiAnimated        # Google's animated emoji
+  - PremiumIcons             # glossy Telegram-premium style icons
+  - DogsEmoji
+  - snoopdogg_emoji
+  - SnoopDogEmoji
+  - TenYearsOfTelegramEmoji  # party characters
+  - ColorReactions
+  - neon_td
+  - DuckEmoji
+  - UtyaDuckEmoji
+  - PepeEmoji
+  - R2DOG2Emoji
+  - SnowRabbitEmoji
+  - JustWhiteCatEmoji
+  - GameIcons
+  - MovieIcons
+  - TopicIcons
+  - StatusEmoji
+  - TStarsIcons
+  - AdaptivePremium
+base:
+  - RestrictedEmoji

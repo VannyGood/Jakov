@@ -31,6 +31,7 @@ from jakov.services.publisher import (
     pick_variation,
     publish,
 )
+from jakov.services.send_queue import SendQueue
 from tests.conftest import ADMIN, OWNER, FakeSession
 
 CATALOG = Catalog(PROJECT_ROOT / "data")
@@ -90,12 +91,12 @@ async def test_too_long_answers_fail_clearly(session: AsyncSession) -> None:
 
 
 async def test_publish_records_and_escapes(bot: Bot, fake_session: FakeSession,
-                                           session: AsyncSession) -> None:
+                                           session: AsyncSession, queue: SendQueue) -> None:
     post = await make_post(session, chosen_index=1, status="ready")
     chat = channel(custom_emoji_ok=True)
     session.add(chat)
     fake_session.on("SendMessage", echo_with_custom(keep=True))
-    record, notes = await publish(bot, session, OWNER, post, chat, CATALOG, library())
+    record, notes = await publish(bot, session, OWNER, post, chat, CATALOG, library(), queue)
     sent = fake_session.called("SendMessage")[0]
     assert "Air Max &lt;90&gt;" in sent.text and "<tg-emoji" in sent.text
     assert record.message_id == 555 and record.variation_idx == 1 and notes == []
@@ -103,15 +104,16 @@ async def test_publish_records_and_escapes(bot: Bot, fake_session: FakeSession,
 
 
 async def test_stripped_custom_emoji_marks_chat(bot: Bot, fake_session: FakeSession,
-                                                session: AsyncSession) -> None:
+                                                session: AsyncSession,
+                                              queue: SendQueue) -> None:
     post = await make_post(session, chosen_index=0, status="ready")
     chat = channel(custom_emoji_ok=None)
     session.add(chat)
     fake_session.on("SendMessage", echo_with_custom(keep=False))
-    _, notes = await publish(bot, session, OWNER, post, chat, CATALOG, library())
+    _, notes = await publish(bot, session, OWNER, post, chat, CATALOG, library(), queue)
     assert chat.custom_emoji_ok is False and "normal emoji" in notes[0]
     # Next post to that chat goes out with plain emoji only.
-    await publish(bot, session, OWNER, post, chat, CATALOG, library())
+    await publish(bot, session, OWNER, post, chat, CATALOG, library(), queue)
     assert "<tg-emoji" not in fake_session.called("SendMessage")[1].text
 
 
@@ -126,13 +128,13 @@ async def test_rotation_cycles_variations(session: AsyncSession) -> None:
 
 
 async def test_media_pin_and_silent(bot: Bot, fake_session: FakeSession,
-                                    session: AsyncSession) -> None:
+                                    session: AsyncSession, queue: SendQueue) -> None:
     post = await make_post(session, chosen_index=0, status="ready", media_kind="photo",
                            media_file_id="PHOTO", pin=True, silent=True,
                            buttons=[{"text": "Buy", "url": "https://shop.io"}])
     chat = channel()
     session.add(chat)
-    record, _ = await publish(bot, session, OWNER, post, chat, CATALOG, library())
+    record, _ = await publish(bot, session, OWNER, post, chat, CATALOG, library(), queue)
     photo = fake_session.called("SendPhoto")[0]
     assert photo.photo == "PHOTO" and photo.disable_notification is True
     assert photo.reply_markup.inline_keyboard[0][0].url == "https://shop.io"
@@ -141,40 +143,43 @@ async def test_media_pin_and_silent(bot: Bot, fake_session: FakeSession,
 
 
 async def test_pin_failure_is_a_note_not_an_error(bot: Bot, fake_session: FakeSession,
-                                                  session: AsyncSession) -> None:
+                                                  session: AsyncSession,
+                                              queue: SendQueue) -> None:
     post = await make_post(session, chosen_index=0, status="ready", pin=True)
     chat = channel()
     session.add(chat)
     fake_session.on("PinChatMessage", lambda m: TelegramBadRequest(
         PinChatMessage(chat_id=1, message_id=1), "not enough rights to pin"))
-    record, notes = await publish(bot, session, OWNER, post, chat, CATALOG, library())
+    record, notes = await publish(bot, session, OWNER, post, chat, CATALOG, library(), queue)
     assert not record.pinned and any("Couldn't pin" in n for n in notes)
 
 
 async def test_forbidden_raises_publish_error(bot: Bot, fake_session: FakeSession,
-                                              session: AsyncSession) -> None:
+                                              session: AsyncSession,
+                                              queue: SendQueue) -> None:
     post = await make_post(session, chosen_index=0, status="ready")
     chat = channel()
     session.add(chat)
     fake_session.on("SendMessage", lambda m: TelegramForbiddenError(m, "bot was kicked"))
     with pytest.raises(PublishError) as info:
-        await publish(bot, session, OWNER, post, chat, CATALOG, library())
+        await publish(bot, session, OWNER, post, chat, CATALOG, library(), queue)
     assert info.value.lost_access
 
 
-async def test_inactive_chat_refused(bot: Bot, session: AsyncSession) -> None:
+async def test_inactive_chat_refused(bot: Bot, session: AsyncSession, queue: SendQueue) -> None:
     post = await make_post(session, chosen_index=0, status="ready")
     with pytest.raises(PublishError, match="rights"):
-        await publish(bot, session, OWNER, post, channel(is_active=False), CATALOG, library())
+        await publish(bot, session, OWNER, post, channel(is_active=False), CATALOG, library(),
+                      queue)
 
 
 async def test_edit_and_delete_published(bot: Bot, fake_session: FakeSession,
-                                         session: AsyncSession) -> None:
+                                         session: AsyncSession, queue: SendQueue) -> None:
     post = await make_post(session, chosen_index=0, status="ready",
                            buttons=[{"text": "Go", "url": "https://go.io"}])
     chat = channel()
     session.add(chat)
-    record, _ = await publish(bot, session, OWNER, post, chat, CATALOG, library())
+    record, _ = await publish(bot, session, OWNER, post, chat, CATALOG, library(), queue)
     await edit_published(bot, record, "<b>New</b>")
     edit = fake_session.called("EditMessageText")[0]
     assert edit.text == "<b>New</b>" and edit.reply_markup.inline_keyboard[0][0].url == \
@@ -185,12 +190,12 @@ async def test_edit_and_delete_published(bot: Bot, fake_session: FakeSession,
     assert record.deleted_at is not None
 
 
-async def test_edit_too_long_rejected(bot: Bot, session: AsyncSession) -> None:
+async def test_edit_too_long_rejected(bot: Bot, session: AsyncSession, queue: SendQueue) -> None:
     post = await make_post(session, chosen_index=0, status="ready", media_kind="photo",
                            media_file_id="P")
     chat = channel()
     session.add(chat)
-    record, _ = await publish(bot, session, OWNER, post, chat, CATALOG, library())
+    record, _ = await publish(bot, session, OWNER, post, chat, CATALOG, library(), queue)
     with pytest.raises(PublishError, match="1024"):
         await edit_published(bot, record, "x" * 1500)
 
