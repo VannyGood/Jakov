@@ -6,15 +6,16 @@ A Telegram bot for your own channels and groups:
 - **Guard**: rule-based moderation of groups and channel comments (links, ads, spam).
 - **Scanner**: checks links and files for malware and phishing.
 
-> Status: **Phase 1 of 6**: skeleton, config, database and migrations, admin access, main
-> menu, channel linking, timezone and the custom emoji test. The other modules arrive in
-> later phases.
+> Status: **Phase 2 of 6**: channel linking, the post wizard with template and emoji engine,
+> animated menus, Send now, and editing or deleting published posts. Scheduling, Guard and
+> Scanner arrive in later phases.
 
 ## Quick start (local, long polling)
 
 ```bash
 cp .env.example .env      # then fill BOT_TOKEN and ADMIN_IDS
 ./scripts/run.sh          # creates .venv, applies migrations, starts the bot
+./scripts/stop.sh         # graceful stop
 ```
 
 Requires Python 3.12+ (developed on 3.14). Then open your bot in Telegram and send `/start`.
@@ -40,6 +41,61 @@ Anyone who is not in `ADMIN_IDS` gets **no response** in private chat.
 
 Jakov tracks being added, removed, demoted or losing rights and messages you each time.
 If a group is upgraded to a supergroup, its new ID is picked up automatically.
+
+## Writing posts (✍️ New post or /newpost)
+
+1. Pick a type: 🎮 Game invite, 🛒 Sell something, 💘 Romantic, 📣 Announcement,
+   🎁 Giveaway or ✏️ Custom.
+2. Answer a few short questions. Optional ones have **⏭ Skip**. Dates accept
+   `friday 20:00`, `25.12 18:00`, `tomorrow 9am`, `in 3 days`, … in your timezone.
+3. Pick a tone (🔥 Hype, 😎 Chill, 😂 Funny, 💼 Serious), then optionally attach one photo or
+   video, and link buttons (`Label - https://link`, one per line).
+4. Jakov sends **3 real previews**. Under each one: **✅ Use this** or **✏️ Edit**. Below
+   them: **🔁 Rotate all 3**, **🔄 Regenerate**, **🎭 Change emojis**, and **🎨 Style**
+   (Mixed, or one pack such as Dogs or Snoop Dogg).
+5. On the ready card, toggle 📌 pin, 🔕 silent and 🔗 link preview, then **📨 Send now**.
+   Scheduling arrives in Phase 3.
+
+Every published post is stored (chat and message ID). **📰 Published** (/posts) lets you
+open, edit the text of, or delete any of them.
+
+### Templates (no AI needed)
+
+Templates live in `data/templates/<type>.yaml`. Each tone has lists of `hooks`, `bodies` and
+`ctas`, and a post combines one of each. Inside a line:
+
+| Syntax | Meaning |
+|---|---|
+| `{Hello\|Hi\|Hey}` | spintax: one option is picked; groups can nest |
+| `{product}`, `{price}`, … | answers from the wizard (HTML-escaped automatically) |
+| `{date}`, `{weekday}`, `{time}`, `{countdown}`, `{deadline}`, `{channel}` | filled at send time in your timezone |
+| `{tip}`, `{quote}`, `{fact}` | rotate through `data/pools/*.yaml` without repeats |
+| `{emoji:fire}`, `{emoji}` | an emoji for that mood, or a generic one matching type and tone |
+| `[[ … ]]` | optional block: removed when a value inside it is empty |
+
+Moods are defined in `data/emoji_moods.yaml`. Jakov validates every template at startup,
+and the tests render all of them.
+
+## Emoji library (😀 Emoji library or /emoji)
+
+On the first start, Jakov imports the starter packs from `data/starter_packs.yaml`
+(RestrictedEmoji, DogsEmoji, two Snoop Dogg packs, DuckEmoji, PepeEmoji, GameIcons, …):
+about 1,800 animated emoji. Static emoji are skipped.
+
+- `/emojipack https://t.me/addemoji/Name` imports a pack.
+- `/addemoji fire`, then send a message with your own custom emoji, tags them with a mood.
+- Browse by **pack** or by **mood**. Tap an emoji to tag, untag or delete it. Packs can be
+  disabled or removed.
+
+Emoji are tagged with moods automatically from their base character (🔥 → fire, 💰 → money,
+…), so any pack works with every template right away.
+
+### Animated menus
+
+Every message and button the bot sends to an admin uses the animated version of its emoji
+(Bot API 9.4 custom emoji and button icons). Turn it off, or pick the pack used for menus,
+in **⚙️ Settings**. Previews and real posts are never rewritten, so a preview always shows
+exactly what will be published.
 
 ## Custom (animated) emoji
 

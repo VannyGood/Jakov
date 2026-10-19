@@ -38,6 +38,8 @@ async def run_private_emoji_probe(bot: Bot, ctx: AppContext, session: AsyncSessi
         log.warning("emoji_probe_failed", error=type(exc).__name__)
         return "⚠️ I couldn't run the custom emoji test right now. Try again in /settings."
     await CapabilityRepo(session, ctx.owner_id).set(CAP_PRIVATE, result.supported, result.detail)
+    await session.commit()
+    await ctx.ui.load(ctx.sessions, ctx.owner_id)
     log.info("emoji_probe", scope="private", supported=result.supported, detail=result.detail)
     if result.supported:
         return ("✅ <b>Animated custom emoji work.</b> If you see an animated emoji above, "
@@ -57,6 +59,9 @@ async def cmd_start(message: Message, bot: Bot, ctx: AppContext, session: AsyncS
         message.from_user.id, message.from_user.username, message.from_user.full_name,
         is_admin=True,
     )
+    if created:
+        await session.commit()
+        await ctx.ui.load(ctx.sessions, ctx.owner_id)
     if created:
         await message.answer(
             f"👋 Hi {html.escape(message.from_user.first_name)}, I'm <b>Jakov</b>.\n"

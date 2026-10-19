@@ -19,5 +19,29 @@ class ChannelCb(CallbackData, prefix="ch"):
 
 
 class SettingsCb(CallbackData, prefix="st"):
-    action: str  # tz | tz_list | tz_pick | tz_type | tz_loc | emoji_test
+    action: str  # tz | tz_list | tz_pick | tz_type | tz_loc | emoji_test | ui_toggle
+    value: int = 0
+
+
+class PostCb(CallbackData, prefix="p"):
+    # type | skip | choice | tone | nomedia | nobuttons | use | rotate | regen | emojis | style
+    # | editpick | back | ready | opt_pin | opt_silent | opt_preview | send | sendto | sendgo
+    # | close
+    action: str
+    post: int = 0
+    value: int = 0
+
+
+class PubCb(CallbackData, prefix="pub"):
+    action: str  # list | open | edit | delete | delete_go
+    pk: int = 0
+    page: int = 0
+
+
+class EmojiCb(CallbackData, prefix="e"):
+    # menu | packs | pack | pack_toggle | pack_delete | pack_delete_go | moods | mood | item
+    # | tag_add | tag_rm | item_delete | import | starter
+    action: str
+    pk: int = 0
+    page: int = 0
     value: int = 0

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextvars import ContextVar
 from pathlib import Path
 
 from sqlalchemy import event
@@ -34,3 +35,8 @@ def create_engine(database_url: str) -> AsyncEngine:
 
 def create_session_factory(engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:
     return async_sessionmaker(engine, expire_on_commit=False)
+
+
+# The session of the update being handled, so helpers like the FSM storage join the
+# handler's transaction instead of opening a competing one (SQLite allows one writer).
+current_session: ContextVar[AsyncSession | None] = ContextVar("jakov_session", default=None)

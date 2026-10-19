@@ -1,0 +1,18 @@
+# Custom emoji packs imported automatically when the emoji library is empty.
+# The first pack is the default style for animated menus (it mirrors standard emoji).
+- RestrictedEmoji
+- DogsEmoji
+- snoopdogg_emoji
+- SnoopDogEmoji
+- DuckEmoji
+- UtyaDuckEmoji
+- PepeEmoji
+- R2DOG2Emoji
+- SnowRabbitEmoji
+- JustWhiteCatEmoji
+- GameIcons
+- MovieIcons
+- TopicIcons
+- StatusEmoji
+- TStarsIcons
+- AdaptivePremium

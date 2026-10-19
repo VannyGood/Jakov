@@ -46,6 +46,7 @@ async def main_menu_text(session: AsyncSession, ctx: AppContext, user_id: int) -
     return (
         "🤖 <b>Jakov control panel</b>\n\n"
         f"📡 Chats: <b>{active}</b> active of {len(chats)} linked\n"
+        f"😀 Emoji library: <b>{ctx.library.size}</b> animated emoji\n"
         f"🕒 Timezone: <b>{html.escape(zone)}</b>{'' if personal else ' (default)'}\n"
         f"✨ Custom emoji in DMs: {emoji_status(cap)}"
     )

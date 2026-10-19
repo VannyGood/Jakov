@@ -11,4 +11,11 @@ if [ ! -f .env ]; then
   echo "No .env found. Copy .env.example to .env and fill in BOT_TOKEN and ADMIN_IDS." >&2
   exit 1
 fi
+mkdir -p var
+if [ -f var/jakov.pid ] && kill -0 "$(cat var/jakov.pid)" 2>/dev/null; then
+  echo "Jakov is already running (pid $(cat var/jakov.pid)). Stop it with ./scripts/stop.sh" >&2
+  exit 1
+fi
+echo $$ > var/jakov.pid
+# exec keeps the same PID, so var/jakov.pid points at the bot itself.
 exec .venv/bin/python -m jakov

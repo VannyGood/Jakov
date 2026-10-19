@@ -1,0 +1,69 @@
+type: giveaway
+title: "🎁 Giveaway"
+palette: [gift, party, trophy, star, fire]
+questions:
+  - key: prize
+    prompt: "🎁 What's the prize?"
+    required: true
+    max_len: 120
+  - key: how
+    prompt: "📝 How do people enter? (e.g. <i>subscribe and comment ❤</i>)"
+    required: true
+    max_len: 300
+  - key: ends
+    prompt: "⏳ When does it end? (e.g. <i>sunday 20:00</i>, <i>in 3 days</i>)"
+    kind: datetime
+    required: false
+tones:
+  hype:
+    hooks:
+      - "{emoji:gift} <b>{GIVEAWAY TIME|FREE STUFF ALERT|WIN BIG}!</b> {emoji:gift}"
+      - "{emoji:party} <b>{We're giving away|Up for grabs|You could win}: {prize}</b>! {emoji:fire}"
+      - "{emoji:trophy} <b>{Want to win|Who wants|Ready to win} {prize}?</b> {emoji:star}"
+    bodies:
+      - "{One lucky winner gets|The prize|Win}: <b>{prize}</b> {emoji:gift}"
+      - "<b>{prize}</b> {could be yours|is waiting for its new owner|for one lucky person} {emoji:party}"
+      - "{It's simple|Easy entry|Super easy}: {emoji:point} {how}"
+    ctas:
+      - "{emoji:check} <b>How to enter:</b> {how}[[\n{emoji:clock} Ends <b>{ends}</b>: {countdown} left!]]"
+      - "{emoji:point} {how}[[\n{emoji:warning} {Only|Just} {countdown} left!]]\n{Good luck|May the odds be with you}! {emoji:star}"
+      - "[[{emoji:clock} {Winner announced|Draw on} {ends}]]\n{emoji:point} {how} {emoji:fire}"
+  chill:
+    hooks:
+      - "{emoji:gift} {Small giveaway|A little giveaway|Giveaway} {for you|for our community|time}"
+      - "{emoji:sparkles} {Let's give something back|Thank you for being here}"
+      - "{emoji:cool} {Free|Win} <b>{prize}</b>"
+    bodies:
+      - "{We're giving away|Up for grabs:} <b>{prize}</b> {emoji:gift}"
+      - "{To say thanks|Because you're awesome}, {one of you gets|someone wins} <b>{prize}</b> {emoji:sparkles}"
+      - "<b>{prize}</b>: {easy to enter|no catch|just for fun} {emoji:chill}"
+    ctas:
+      - "{emoji:point} {how}[[\n{emoji:calendar} Until {ends}]]"
+      - "{To enter|Entry}: {how}[[ (ends {ends})]] {emoji:wave}"
+      - "{emoji:check} {how}\n{Good luck|Best of luck} {emoji:sparkles}"
+  funny:
+    hooks:
+      - "{emoji:laugh} {Free stuff! Our accountant is crying|Giveaway! Don't tell our boss|We're giving stuff away and nobody stopped us}"
+      - "{emoji:eyes} {Want free stuff? Of course you do|Psst, free <b>{prize}</b>}"
+      - "{emoji:devil} {Your luck is about to change|Today could be your lucky day (or not)}"
+    bodies:
+      - "<b>{prize}</b> {could be yours|is looking for a new home|wants to meet you} {emoji:gift}. {Probably|Maybe|Statistically possible} {emoji:laugh}"
+      - "{We're giving away|Win} <b>{prize}</b>. {No, it's not a scam|Yes, it's real|Pinky promise} {emoji:eyes}"
+      - "{Enter now|Join in} and {win|maybe win} <b>{prize}</b> {emoji:party}. {Losing is free too|Everyone's a winner (except most people)} {emoji:laugh}"
+    ctas:
+      - "{emoji:point} {how}[[\n{emoji:clock} {countdown} left, no pressure (some pressure)]]"
+      - "{How to enter|Rules}: {how}\n{emoji:laugh} {Good luck, you'll need it|Fingers crossed}!"
+      - "{emoji:check} {how}[[\nEnds {ends}. Set 7 alarms. {emoji:clock}]]"
+  serious:
+    hooks:
+      - "{emoji:gift} <b>{Giveaway|Prize draw|Contest}</b>"
+      - "{emoji:trophy} <b>{Prize|Win}: {prize}</b>"
+      - "{emoji:info} <b>{Giveaway announcement|Contest announcement}</b>"
+    bodies:
+      - "{We are running a giveaway|We are holding a prize draw|A giveaway is now open}. Prize: <b>{prize}</b>."
+      - "{One participant will receive|The winner receives} <b>{prize}</b>."
+      - "Prize: <b>{prize}</b>. {Winner selected at random|One winner|Fair draw}."
+    ctas:
+      - "{emoji:check} <b>How to participate:</b> {how}[[\n{emoji:calendar} Ends: <b>{ends}</b>]]"
+      - "{emoji:point} {how}[[\n{emoji:clock} Time remaining: {countdown}]]"
+      - "{emoji:check} {Conditions|Entry}: {how}[[\n{emoji:calendar} {The winner will be announced|Draw date:} {ends}]]"

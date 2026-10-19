@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.base import StorageKey
 from sqlalchemy import select
@@ -74,3 +76,30 @@ async def test_capability_upsert(session: AsyncSession) -> None:
     await caps.set("k", False, "nope")
     cap = await caps.get("k")
     assert cap is not None and cap.supported is False and cap.detail == "nope"
+
+
+async def test_fsm_write_joins_handler_transaction_on_sqlite_file(tmp_path: Path) -> None:
+    """A handler with pending writes can change wizard state without 'database is locked'."""
+    import asyncio
+
+    from jakov.db.base import Base
+    from jakov.db.session import create_engine, create_session_factory, current_session
+
+    engine = create_engine(f"sqlite+aiosqlite:///{tmp_path / 'lock.db'}")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    factory = create_session_factory(engine)
+    storage = SQLAlchemyStorage(factory, OWNER)
+    async with factory() as session:
+        await ChatRepo(session, OWNER).add(
+            Chat(tg_chat_id=-5, kind=ChatKind.CHANNEL, title="x", settings={}))  # holds lock
+        token = current_session.set(session)
+        try:
+            await asyncio.wait_for(storage.set_state(KEY, S.step), timeout=2)
+            await storage.update_data(KEY, {"k": 1})
+        finally:
+            current_session.reset(token)
+        await session.commit()
+    assert await storage.get_state(KEY) == "S:step"
+    assert await storage.get_data(KEY) == {"k": 1}
+    await engine.dispose()

@@ -1,0 +1,69 @@
+type: game
+title: "🎮 Game invite"
+palette: [game, win, fire, sword, trophy]
+questions:
+  - key: game
+    prompt: "🎮 What game are we playing?"
+    required: true
+    max_len: 80
+  - key: cta
+    prompt: "📣 What should people do? (e.g. <i>Join the lobby at 9 PM</i>)"
+    required: false
+    max_len: 200
+  - key: when
+    prompt: "⏰ When does it start? (e.g. <i>today 21:00</i>, <i>friday 20:00</i>, <i>in 2 hours</i>)"
+    kind: datetime
+    required: false
+tones:
+  hype:
+    hooks:
+      - "{emoji:fire} <b>{GAME TIME|IT'S GO TIME|LET'S GOOO|SQUAD UP}!</b> {emoji:fire}"
+      - "{emoji:game} <b>{game}</b> {is calling|needs you|is ON} {emoji:rocket}"
+      - "{emoji:hype} <b>{Who's ready|Are you ready|You in}?</b> {emoji:hype}"
+    bodies:
+      - "{We're jumping into|Tonight we hit|Get ready for} <b>{game}</b>{ and it's going to be wild| with the whole crew|, no mercy}! {emoji:sword}"
+      - "<b>{game}</b> {session|lobby|match} {incoming|loading|about to start} {emoji:game} {Bring your A-game|Warm up those fingers|No excuses}!"
+      - "{Grab your controller|Charge your headset|Clear your schedule}, <b>{game}</b> {awaits|is waiting|starts soon} {emoji:win}"
+    ctas:
+      - "[[{emoji:clock} Starts <b>{when}</b> ({countdown} to go)]]\n[[{emoji:point} {cta}]]"
+      - "[[{emoji:point} <b>{cta}</b>]]\n[[{emoji:clock} {Kickoff|Start}: {when}]] {emoji:trophy}"
+      - "[[{emoji:megaphone} {cta}]]\n{Don't miss it|See you there|Last one in is a noob}! {emoji:fire}"
+  chill:
+    hooks:
+      - "{emoji:game} {Hey|Yo|Hi} {everyone|folks|squad} {emoji:wave}"
+      - "{emoji:cool} {Chill|Cozy|Easy} {game night|session|evening} {ahead|incoming}"
+      - "{emoji:chill} {Fancy a game|Up for a round|Want to play}?"
+    bodies:
+      - "{We're playing|Jumping into|Hanging out in} <b>{game}</b>{, no pressure| for a few rounds|, just for fun} {emoji:game}"
+      - "<b>{game}</b> {with good vibes only|at a relaxed pace|and good company} {emoji:sparkles}"
+      - "{Come|Feel free to} {join us|hop in|drop by} for some <b>{game}</b> {emoji:cool}"
+    ctas:
+      - "[[{emoji:clock} {when}]]\n[[{cta}]] {emoji:wave}"
+      - "[[{emoji:point} {cta}]]\n[[{emoji:calendar} {when}]]"
+      - "[[{cta} {emoji:chill}]]\n{Everyone's welcome|All levels welcome}."
+  funny:
+    hooks:
+      - "{emoji:laugh} {Warning|Attention|Breaking news}: {skill issues|rage quits|chaos} {expected|incoming|guaranteed} {emoji:ghost}"
+      - "{emoji:devil} {Who wants to lose|Ready to get carried|Time to blame lag} {again|tonight}?"
+      - "{emoji:eyes} {Your controller misses you|Your teammates are lonely|The lobby is suspiciously empty}"
+    bodies:
+      - "<b>{game}</b> {tonight|incoming}: {bring snacks, leave your dignity|lag is not an excuse (it is)|we promise to only scream a little} {emoji:laugh}"
+      - "{We need someone to blame|Our team needs a scapegoat|We're short one hero}: join <b>{game}</b> {emoji:devil}"
+      - "<b>{game}</b>: {where friendships go to die|the cardio we actually do|100% skill, 0% luck (lies)} {emoji:ghost}"
+    ctas:
+      - "[[{emoji:point} {cta}]]\n[[{emoji:clock} {when} ({countdown} to prepare excuses)]]"
+      - "[[{emoji:clock} {when}]]\n[[{cta}]] {emoji:laugh}"
+      - "[[{cta}]]\n{Losers buy pizza|No crying in the lobby|Bring tissues} {emoji:laugh}"
+  serious:
+    hooks:
+      - "{emoji:game} <b>{Game session|Match|Tournament round} {announcement|notice|scheduled}</b>"
+      - "{emoji:info} <b>{game}</b>: {session details|event info|lineup call}"
+      - "{emoji:point} <b>{Players wanted|Team call|Roster open}</b>"
+    bodies:
+      - "{We are organising|We're hosting|A new session of} <b>{game}</b>{ for the community| and we need players}."
+      - "{Join us for|Take part in} <b>{game}</b>{. Fair play expected|. All rules apply|. Please be on time}."
+      - "<b>{game}</b>: {open to all members|registered players first|limited slots}."
+    ctas:
+      - "[[{emoji:calendar} Start: <b>{when}</b>]]\n[[{emoji:check} {cta}]]"
+      - "[[{emoji:check} {cta}]]\n[[{emoji:clock} {when}]]"
+      - "[[{cta}]]\n[[{emoji:clock} {countdown} remaining]]"

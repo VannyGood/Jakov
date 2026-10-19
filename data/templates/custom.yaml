@@ -1,0 +1,69 @@
+type: custom
+title: "✏️ Custom"
+palette: [star, sparkles, point, check]
+questions:
+  - key: topic
+    prompt: "✏️ What's the post about? (a short title)"
+    required: true
+    max_len: 120
+  - key: message
+    prompt: "📝 The main message (what you want to say):"
+    required: true
+    max_len: 800
+  - key: cta
+    prompt: "👉 Call to action? (e.g. <i>Comment below</i>) — or skip"
+    required: false
+    max_len: 160
+tones:
+  hype:
+    hooks:
+      - "{emoji} <b>{topic}</b> {emoji}"
+      - "{emoji:fire} <b>{topic}</b>{!|!!} {emoji:rocket}"
+      - "{emoji:hype} <b>{Listen up|Check this out|You need to see this}: {topic}</b>"
+    bodies:
+      - "{message} {emoji}"
+      - "{message}\n\n{This is big|Let's go|Hyped} {emoji:fire}"
+      - "{emoji:star} {message}"
+    ctas:
+      - "[[{emoji:point} <b>{cta}</b>]]"
+      - "[[{emoji:point} {cta} {emoji:fire}]]"
+      - "[[{emoji:megaphone} {cta}!]]"
+  chill:
+    hooks:
+      - "{emoji} <b>{topic}</b>"
+      - "{emoji:sparkles} {topic}"
+      - "{emoji:wave} {Hey|Hi}, {quick one|something new}: <b>{topic}</b>"
+    bodies:
+      - "{message}"
+      - "{message} {emoji}"
+      - "{emoji:chill} {message}"
+    ctas:
+      - "[[{cta} {emoji}]]"
+      - "[[{emoji:point} {cta}]]"
+      - "[[{cta}]]"
+  funny:
+    hooks:
+      - "{emoji:laugh} <b>{topic}</b> {(you're welcome)|(no refunds)|(read till the end)}"
+      - "{emoji:eyes} {Stop scrolling|Hold on|Wait for it}: <b>{topic}</b>"
+      - "{emoji:devil} <b>{topic}</b>"
+    bodies:
+      - "{message} {emoji:laugh}"
+      - "{message}\n\n{That's it. That's the post|We'll see ourselves out|Okay bye} {emoji:ghost}"
+      - "{message} {emoji}"
+    ctas:
+      - "[[{emoji:point} {cta} (or else {emoji:devil})]]"
+      - "[[{emoji:point} {cta}]]"
+      - "[[{cta} {emoji:laugh}]]"
+  serious:
+    hooks:
+      - "{emoji:info} <b>{topic}</b>"
+      - "{emoji:serious} <b>{topic}</b>"
+      - "{emoji:point} <b>{topic}</b>"
+    bodies:
+      - "{message}"
+      - "{message}"
+      - "{emoji:check} {message}"
+    ctas:
+      - "[[{emoji:point} {cta}]]"
+      - "[[{emoji:check} {cta}.]]"
+      - "[[{cta}]]"

@@ -65,13 +65,14 @@ class FakeSession(BaseSession):
             if isinstance(result, Exception):
                 raise result
             return result
-        if name == "SendMessage":
+        if name in ("SendMessage", "SendPhoto", "SendVideo"):
             self._message_id += 1
             return Message(
                 message_id=self._message_id,
                 date=datetime.now(UTC),
                 chat=Chat(id=method.chat_id, type="private"),
-                text=method.text,
+                text=getattr(method, "text", None),
+                caption=getattr(method, "caption", None),
             )
         return True
 

@@ -8,7 +8,7 @@ from aiogram.types import (
 )
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from jakov.keyboards.callbacks import MenuCb, SettingsCb
+from jakov.keyboards.callbacks import EmojiCb, MenuCb, SettingsCb
 from jakov.keyboards.common import cancel_button
 from jakov.services.timezones import COMMON_ZONES
 
@@ -17,9 +17,12 @@ SHARE_LOCATION_TEXT = "📍 Send my location"
 CANCEL_TEXT = "✖️ Cancel"
 
 
-def settings_kb() -> InlineKeyboardMarkup:
+def settings_kb(ui_animated: bool = True) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     kb.button(text="🕒 Timezone", callback_data=SettingsCb(action="tz"))
+    kb.button(text=f"🎨 Animated menus: {'On' if ui_animated else 'Off'}",
+              callback_data=SettingsCb(action="ui_toggle"))
+    kb.button(text="📦 Menu emoji pack", callback_data=EmojiCb(action="packs"))
     kb.button(text="🧪 Custom emoji test", callback_data=SettingsCb(action="emoji_test"))
     kb.button(text="⬅️ Back", callback_data=MenuCb(to="main"))
     kb.adjust(1)

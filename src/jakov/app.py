@@ -13,21 +13,27 @@ from aiogram.exceptions import TelegramAPIError
 from aiogram.types import BotCommand, BotCommandScopeChat, BotCommandScopeDefault
 
 from jakov.config import Settings
-from jakov.context import AppContext
+from jakov.context import AppContext, build_context
 from jakov.db.fsm_storage import SQLAlchemyStorage
 from jakov.db.session import create_engine, create_session_factory
 from jakov.handlers import all_routers
 from jakov.logging_setup import get_logger
 from jakov.middlewares.admin_only import AdminOnlyMiddleware
 from jakov.middlewares.db_session import DbSessionMiddleware, UpdateCounterMiddleware
-from jakov.services.emoji_capability import EmojiProbe
+from jakov.services.starter import ensure_starter_library
+from jakov.services.ui_emoji import AnimatedUiMiddleware
 
 log = get_logger(__name__)
 
 ADMIN_COMMANDS = [
     BotCommand(command="start", description="Main menu"),
+    BotCommand(command="newpost", description="Write a new post"),
+    BotCommand(command="posts", description="Published posts: edit or delete"),
     BotCommand(command="channels", description="Linked channels and groups"),
-    BotCommand(command="settings", description="Timezone and checks"),
+    BotCommand(command="emoji", description="Emoji library"),
+    BotCommand(command="addemoji", description="Add custom emoji: /addemoji <mood>"),
+    BotCommand(command="emojipack", description="Import a pack: /emojipack <link>"),
+    BotCommand(command="settings", description="Timezone, animated menus, checks"),
 ]
 
 
@@ -64,21 +70,20 @@ async def _health_loop(ctx: AppContext, interval: int) -> None:
 
 async def run(settings: Settings) -> None:
     engine = create_engine(settings.database_url)
-    ctx = AppContext(
-        settings=settings,
-        sessions=create_session_factory(engine),
-        emoji_probe=EmojiProbe(settings.emoji_test_pack),
-    )
+    ctx = build_context(settings, create_session_factory(engine))
+    await ctx.reload_emoji()
     bot = Bot(
         settings.bot_token.get_secret_value(),
         default=DefaultBotProperties(parse_mode=ParseMode.HTML, link_preview_is_disabled=True),
     )
+    bot.session.middleware(AnimatedUiMiddleware(ctx.ui))
     dp = build_dispatcher(ctx)
 
     me = await bot.get_me()
     log.info("starting", bot=me.username, mode=settings.run_mode, admins=len(settings.admin_ids))
     await _set_commands(bot, settings.admin_ids)
     health = asyncio.create_task(_health_loop(ctx, settings.health_log_interval_s))
+    starter = asyncio.create_task(ensure_starter_library(bot, ctx))
     try:
         if settings.run_mode == "webhook":
             await _run_webhook(bot, dp, settings)
@@ -86,9 +91,10 @@ async def run(settings: Settings) -> None:
             await bot.delete_webhook(drop_pending_updates=False)
             await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
     finally:
-        health.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await health
+        for task in (health, starter):
+            task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await task
         await bot.session.close()
         await engine.dispose()
         log.info("stopped")

@@ -45,14 +45,26 @@ router.message.filter(F.chat.type == ChatType.PRIVATE)
 async def _settings_text(session: AsyncSession, ctx: AppContext, user_id: int) -> str:
     zone, personal = await zone_for(session, ctx, user_id)
     cap = await CapabilityRepo(session, ctx.owner_id).get(CAP_PRIVATE)
+    user = await UserRepo(session, ctx.owner_id).get(user_id)
     now_local = format_local(utcnow(), effective_zone(zone, ctx.settings.timezone))
     source = "your setting" if personal else "default from config"
+    menu_pack = (user.ui_emoji_pack if user else None) or ctx.library.default_ui_pack or "any"
+    animated = user.ui_animated if user else True
     return (
         "⚙️ <b>Settings</b>\n\n"
         f"🕒 Timezone: <b>{html.escape(zone)}</b> ({source})\n"
         f"    Local time now: {now_local}\n"
-        f"✨ Custom emoji in DMs: {emoji_status(cap)}"
+        f"✨ Custom emoji in DMs: {emoji_status(cap)}\n"
+        f"🎨 Animated menus: <b>{'on' if animated else 'off'}</b> · pack "
+        f"<b>{html.escape(menu_pack)}</b>"
     )
+
+
+async def _show_settings(target: Message | CallbackQuery, session: AsyncSession,
+                         ctx: AppContext, user_id: int, prefix: str = "") -> None:
+    user = await UserRepo(session, ctx.owner_id).get(user_id)
+    await show(target, prefix + await _settings_text(session, ctx, user_id),
+               settings_kb(user.ui_animated if user else True))
 
 
 async def _save_zone(session: AsyncSession, ctx: AppContext, user_id: int, zone: str) -> None:
@@ -65,15 +77,14 @@ async def cmd_settings(message: Message, ctx: AppContext, session: AsyncSession,
                        state: FSMContext) -> None:
     assert message.from_user is not None
     await state.clear()
-    await message.answer(await _settings_text(session, ctx, message.from_user.id),
-                         reply_markup=settings_kb())
+    await _show_settings(message, session, ctx, message.from_user.id)
 
 
 @router.callback_query(MenuCb.filter(F.to == "settings"))
 async def cb_settings(callback: CallbackQuery, ctx: AppContext, session: AsyncSession,
                       state: FSMContext) -> None:
     await state.clear()
-    await show(callback, await _settings_text(session, ctx, callback.from_user.id), settings_kb())
+    await _show_settings(callback, session, ctx, callback.from_user.id)
     await callback.answer()
 
 
@@ -105,8 +116,7 @@ async def cb_tz_pick(callback: CallbackQuery, callback_data: SettingsCb, ctx: Ap
         await callback.answer("Unknown timezone", show_alert=True)
         return
     await _save_zone(session, ctx, callback.from_user.id, COMMON_ZONES[callback_data.value])
-    await show(callback, "✅ Timezone saved.\n\n" + await _settings_text(
-        session, ctx, callback.from_user.id), settings_kb())
+    await _show_settings(callback, session, ctx, callback.from_user.id, "✅ Timezone saved.\n\n")
     await callback.answer()
 
 
@@ -129,8 +139,7 @@ async def msg_tz_typed(message: Message, ctx: AppContext, session: AsyncSession,
         return
     await state.clear()
     await _save_zone(session, ctx, message.from_user.id, zone)
-    await message.answer("✅ Timezone saved.\n\n" + await _settings_text(
-        session, ctx, message.from_user.id), reply_markup=settings_kb())
+    await _show_settings(message, session, ctx, message.from_user.id, "✅ Timezone saved.\n\n")
 
 
 @router.callback_query(SettingsCb.filter(F.action == "tz_loc"))
@@ -161,8 +170,7 @@ async def msg_location(message: Message, ctx: AppContext, session: AsyncSession,
     await _save_zone(session, ctx, message.from_user.id, zone)
     await message.answer(f"✅ Timezone set to <b>{html.escape(zone)}</b>.",
                          reply_markup=ReplyKeyboardRemove())
-    await message.answer(await _settings_text(session, ctx, message.from_user.id),
-                         reply_markup=settings_kb())
+    await _show_settings(message, session, ctx, message.from_user.id)
 
 
 @router.message(SettingsStates.waiting_location)
@@ -171,12 +179,24 @@ async def msg_location_other(message: Message) -> None:
                          reply_markup=location_request_kb())
 
 
+@router.callback_query(SettingsCb.filter(F.action == "ui_toggle"))
+async def cb_ui_toggle(callback: CallbackQuery, ctx: AppContext, session: AsyncSession) -> None:
+    user = await UserRepo(session, ctx.owner_id).get(callback.from_user.id)
+    if user is None:
+        await callback.answer("Send /start first.", show_alert=True)
+        return
+    user.ui_animated = not user.ui_animated
+    await session.commit()
+    await ctx.ui.load(ctx.sessions, ctx.owner_id)
+    await _show_settings(callback, session, ctx, callback.from_user.id)
+    await callback.answer("Animated menus " + ("on ✨" if user.ui_animated else "off"))
+
+
 @router.callback_query(SettingsCb.filter(F.action == "emoji_test"))
 async def cb_emoji_test(callback: CallbackQuery, bot: Bot, ctx: AppContext,
                         session: AsyncSession) -> None:
     await callback.answer("Testing…")
     verdict = await run_private_emoji_probe(bot, ctx, session, callback.from_user.id)
-    await bot.send_message(callback.from_user.id, verdict)
-    await bot.send_message(callback.from_user.id,
-                           await _settings_text(session, ctx, callback.from_user.id),
-                           reply_markup=settings_kb())
+    sent = await bot.send_message(callback.from_user.id, verdict)
+    # A Message target makes _show_settings send a fresh settings card below the verdict.
+    await _show_settings(sent, session, ctx, callback.from_user.id)

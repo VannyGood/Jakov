@@ -1,0 +1,13 @@
+# Tones offered in the wizard. `palette` = moods used for generic {emoji} tokens.
+hype:
+  title: "🔥 Hype"
+  palette: [fire, hype, rocket, party, star]
+chill:
+  title: "😎 Chill"
+  palette: [cool, chill, sparkles, wave]
+funny:
+  title: "😂 Funny"
+  palette: [laugh, party, eyes, devil, ghost]
+serious:
+  title: "💼 Serious"
+  palette: [serious, check, info, point, idea]
