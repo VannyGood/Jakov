@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import JSON, Boolean, String, UniqueConstraint
+from sqlalchemy import JSON, Boolean, Float, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from jakov.db.base import Base, OwnedMixin, TimestampMixin
@@ -23,3 +23,5 @@ class EmojiLibraryItem(OwnedMixin, TimestampMixin, Base):
     kind: Mapped[str] = mapped_column(String(8), default="animated")
     tags: Mapped[list[str]] = mapped_column(JSON, default=list)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # How much the animation actually moves (engine.lottie_motion); None = not measured yet.
+    motion: Mapped[float | None] = mapped_column(Float)

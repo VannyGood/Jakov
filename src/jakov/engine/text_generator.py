@@ -20,6 +20,15 @@ class GenerationRequest:
     post_type: str
     tone: str
     answers: dict[str, str] = field(default_factory=dict)
+    has_buttons: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class GeneratedText:
+    """A post template plus who wrote it: "llm" (AI writer) or "template" (built-in)."""
+
+    template: str
+    source: str = "template"
 
 
 # Sections a layout may use without the tone providing them (the line is dropped).
@@ -31,7 +40,7 @@ class TextGenerator(Protocol):
 
     async def generate(
         self, request: GenerationRequest, count: int, exclude: frozenset[str] = frozenset()
-    ) -> list[str]: ...
+    ) -> list[GeneratedText]: ...
 
 
 class TemplateGenerator:
@@ -73,7 +82,11 @@ class TemplateGenerator:
 
     async def generate(
         self, request: GenerationRequest, count: int, exclude: frozenset[str] = frozenset()
-    ) -> list[str]:
+    ) -> list[GeneratedText]:
+        return [GeneratedText(t) for t in self.templates(request, count, exclude)]
+
+    def templates(self, request: GenerationRequest, count: int,
+                  exclude: frozenset[str] = frozenset()) -> list[str]:
         layouts = self.usable_layouts(request.post_type, request.tone)
         if not layouts:
             raise ValueError(f"no usable layout for {request.post_type}/{request.tone}")

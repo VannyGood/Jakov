@@ -40,7 +40,7 @@ class PubCb(CallbackData, prefix="pub"):
 
 class EmojiCb(CallbackData, prefix="e"):
     # menu | packs | pack | pack_toggle | pack_delete | pack_delete_go | moods | mood | item
-    # | tag_add | tag_rm | item_delete | import | starter
+    # | tag_add | tag_rm | item_delete | import | addown | starter
     action: str
     pk: int = 0
     page: int = 0
@@ -48,8 +48,9 @@ class EmojiCb(CallbackData, prefix="e"):
 
 
 class SchCb(CallbackData, prefix="s"):
-    # Wizard: new | chat | kind | once | daily | daily_type | every | every_type | first
-    #   | limit | opt_rotate | opt_approval | summary | confirm | retime
+    # Wizard: new | chat | when | once | once_type | kind | daily | daily_type | every
+    #   | every_type | first | ends | end_count | end_type | opt_rotate | opt_approval
+    #   | summary | confirm
     # Manage: list | open | pause | resume | sendnow | edit | delete | delete_go | history
     action: str
     pk: int = 0

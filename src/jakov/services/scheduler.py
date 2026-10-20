@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 
 from aiogram import Bot
 from aiogram.exceptions import TelegramAPIError
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types import InlineKeyboardMarkup
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -29,7 +29,9 @@ from jakov.db.repositories.schedules import ScheduleRepo
 from jakov.engine import catchup
 from jakov.engine.limits import check_length
 from jakov.keyboards.callbacks import ApCb, SchCb
+from jakov.keyboards.ui import btn
 from jakov.logging_setup import get_logger
+from jakov.services.drafts import build_request
 from jakov.services.notifier import notify_admins
 from jakov.services.publisher import (
     PublishError,
@@ -49,22 +51,17 @@ log = get_logger(__name__)
 
 
 def open_schedule_kb(schedule_id: int, *, resume: bool = False) -> InlineKeyboardMarkup:
-    rows = [[InlineKeyboardButton(text="🗓 Open schedule",
-                                  callback_data=SchCb(action="open", pk=schedule_id).pack())]]
+    rows = [[btn("📆 Open schedule", SchCb(action="open", pk=schedule_id))]]
     if resume:
-        rows.insert(0, [InlineKeyboardButton(
-            text="▶️ Resume", callback_data=SchCb(action="resume", pk=schedule_id).pack())])
+        rows.insert(0, [btn("▶️ Resume", SchCb(action="resume", pk=schedule_id), "success")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def approval_kb(request_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="✅ Approve", callback_data=ApCb(action="approve",
-                                                                  pk=request_id).pack()),
-         InlineKeyboardButton(text="⏭ Skip", callback_data=ApCb(action="skip",
-                                                               pk=request_id).pack())],
-        [InlineKeyboardButton(text="✏️ Edit text", callback_data=ApCb(action="edit",
-                                                                     pk=request_id).pack())],
+        [btn("✅ Approve", ApCb(action="approve", pk=request_id), "success"),
+         btn("👉 Skip", ApCb(action="skip", pk=request_id), "danger")],
+        [btn("✏️ Edit text", ApCb(action="edit", pk=request_id))],
     ])
 
 
@@ -101,7 +98,8 @@ class Scheduler:
         for row in stuck:
             await notify_admins(
                 self.bot, self.ctx.admin_ids,
-                f"⚠️ A scheduled run ({format_local(row.scheduled_for, self.settings.default_zone)})"
+                f"❗ A scheduled run "
+                f"({format_local(row.scheduled_for, self.settings.default_zone)})"
                 " was interrupted by a restart. Check the channel: it was <b>not</b> retried, "
                 "so there is no duplicate.",
                 open_schedule_kb(row.schedule_id) if row.schedule_id else None)
@@ -185,11 +183,21 @@ class Scheduler:
 
     async def _render(self, session: AsyncSession, sch: Schedule, post: Post, chat: Chat
                       ) -> tuple[Rendered, int]:
-        variation = fresh_spin(pick_variation(post, rotate=sch.rotate,
-                                              last_index=sch.last_variation_index))
-        rendered = await render_for_chat(session, self.ctx.owner_id, post, chat, variation,
-                                         self.ctx.catalog, self.ctx.library)
-        return rendered, variation.idx
+        base = pick_variation(post, rotate=sch.rotate, last_index=sch.last_variation_index)
+        if base.source == "llm":
+            # AI-written posts get freshly written on every scheduled send.
+            written = await self.ctx.generator.generate(build_request(post), 1)
+            if written and written[0].source == "llm":
+                fresh = fresh_spin(base)
+                fresh.template = fresh.resolved = written[0].template
+                try:
+                    return await render_for_chat(session, self.ctx.owner_id, post, chat, fresh,
+                                                 self.ctx.catalog, self.ctx.library), base.idx
+                except PublishError:
+                    log.info("llm_rewrite_unusable_using_saved", post_id=post.id)
+        rendered = await render_for_chat(session, self.ctx.owner_id, post, chat,
+                                         fresh_spin(base), self.ctx.catalog, self.ctx.library)
+        return rendered, base.idx
 
     async def execute(self, log_id: int, rendered: Rendered | None = None,
                       variation_idx: int | None = None) -> bool:
@@ -226,7 +234,7 @@ class Scheduler:
             schedule_id, chat_name = sch.id, chat.name
         log.info("scheduled_post_sent", schedule_id=schedule_id, message_id=record.message_id)
         for note in notes:
-            await notify_admins(self.bot, self.ctx.admin_ids, f"ℹ️ {html.escape(note)}")
+            await notify_admins(self.bot, self.ctx.admin_ids, f"💡 {html.escape(note)}")
         if finished:
             await notify_admins(
                 self.bot, self.ctx.admin_ids,
@@ -246,7 +254,7 @@ class Scheduler:
         await session.commit()
         log.warning("scheduled_post_failed", schedule_id=sch.id, error=str(exc),
                     paused=exc.lost_access)
-        prefix = "⏸ Schedule paused" if exc.lost_access else "⚠️ A scheduled post failed"
+        prefix = "💤 Schedule paused" if exc.lost_access else "❗ A scheduled post failed"
         await notify_admins(
             self.bot, self.ctx.admin_ids,
             f"{prefix} for <b>{html.escape(chat.name)}</b>.\n{html.escape(str(exc))}",

@@ -11,7 +11,7 @@ from jakov.db.models import Post, PostVariation
 from jakov.engine.catalog import Catalog
 from jakov.engine.compose import resolve_spintax
 from jakov.engine.limits import check_length
-from jakov.engine.text_generator import GenerationRequest, TextGenerator
+from jakov.engine.text_generator import GenerationRequest, TemplateGenerator, TextGenerator
 from jakov.services.emoji_library import EmojiLibrary
 from jakov.services.publisher import render_variation
 
@@ -33,13 +33,16 @@ async def generate_variations(
 ) -> None:
     """Replace the post's variations with `count` fresh ones that fit Telegram's limits."""
     previous = frozenset(v.template for v in post.variations if not v.is_custom)
-    request = GenerationRequest(post.post_type, post.tone or "hype", dict(post.answers))
-    candidates = await generator.generate(request, count * 4, exclude=previous)
+    request = build_request(post)
+    generated = await generator.generate(request, count, exclude=previous)
+    # Backup candidates in case some written texts don't fit Telegram's limits.
+    backup = await TemplateGenerator(catalog).generate(request, count * 4, exclude=previous)
     rng = random.Random(new_seed())
     fitting: list[PostVariation] = []
-    for template in candidates:
-        variation = PostVariation(owner_id=owner_id, idx=len(fitting), template=template,
-                                  resolved=resolve_spintax(template, rng), emoji_seed=new_seed())
+    for item in [*generated, *backup]:
+        variation = PostVariation(owner_id=owner_id, idx=len(fitting), template=item.template,
+                                  resolved=resolve_spintax(item.template, rng),
+                                  emoji_seed=new_seed(), source=item.source)
         # Kept detached from the session until chosen (render only reads its fields).
         rendered = await render_variation(session, owner_id, post, variation, catalog, library,
                                           custom_emoji=False)
@@ -57,6 +60,11 @@ async def generate_variations(
         post.variations.append(variation)
     post.status, post.rotate, post.chosen_index = "draft", False, None
     await session.flush()
+
+
+def build_request(post: Post) -> GenerationRequest:
+    return GenerationRequest(post.post_type, post.tone or "hype", dict(post.answers),
+                             has_buttons=bool(post.buttons))
 
 
 def reroll_emojis(post: Post) -> None:
@@ -84,7 +92,7 @@ async def set_custom_text(
     rng = random.Random(new_seed())
     candidate = PostVariation(owner_id=owner_id, idx=idx, template=html_text,
                               resolved=resolve_spintax(html_text, rng), emoji_seed=new_seed(),
-                              is_custom=True)
+                              is_custom=True, source="custom")
     rendered = await render_variation(session, owner_id, post, candidate, catalog, library,
                                       custom_emoji=False)
     length = check_length(rendered.html, post.has_media)
@@ -95,6 +103,7 @@ async def set_custom_text(
     variation.resolved = candidate.resolved
     variation.emoji_seed = candidate.emoji_seed
     variation.is_custom = True
+    variation.source = "custom"
     await session.flush()
 
 

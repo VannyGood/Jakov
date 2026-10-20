@@ -80,7 +80,7 @@ async def test_generator_returns_distinct_openings() -> None:
     for type_key in CATALOG.type_order:
         for tone in CATALOG.tones:
             for _ in range(10):
-                out = await gen.generate(GenerationRequest(type_key, tone), 3)
+                out = [g.template for g in await gen.generate(GenerationRequest(type_key, tone), 3)]
                 assert len(out) == 3 and len(set(out)) == 3
                 for text in out:  # the essentials are always mentioned
                     assert gen.required_fields(type_key) <= placeholders(text), text
@@ -101,8 +101,8 @@ def test_layout_drops_lines_for_missing_sections() -> None:
 
 async def test_generator_respects_exclude() -> None:
     gen = TemplateGenerator(CATALOG, random.Random(2))
-    first = await gen.generate(GenerationRequest("sell", "chill"), 3)
-    second = await gen.generate(GenerationRequest("sell", "chill"), 3, exclude=frozenset(first))
+    first = gen.templates(GenerationRequest("sell", "chill"), 3)
+    second = gen.templates(GenerationRequest("sell", "chill"), 3, exclude=frozenset(first))
     assert not set(first) & set(second)
 
 

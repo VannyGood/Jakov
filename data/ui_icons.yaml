@@ -1,58 +1,72 @@
-# Hand-picked animated icons for the bot's own menus and buttons (the "Premium" menu style).
-# Key: the emoji used in the UI text. The icon may look different from the key emoji;
-# Telegram shows the key emoji as a fallback where custom emoji can't be displayed.
-# Edit freely: `pack` and `index` are documentation, `id` is what the bot uses.
+# Hand-picked animated menu icons (default "Premium" menu style).
+# Generated from measured motion: only emoji that visibly move are listed, preferring
+# Google's NotoEmojiAnimated, then moving PremiumIcons, then Telegram's animated set.
+# Key = emoji used in the UI text; `id` is what the bot uses. Icons that turn out frozen
+# or belong to a removed pack are ignored automatically.
 icons:
-  "🤖": {id: "5431490770089560625", pack: PremiumIcons, index: 32}  # purple bot face tile
-  "✍️": {id: "5219917343899024614", pack: NotoEmojiAnimated, index: 42}  # Google animated writing hand
-  "✏️": {id: "5219917343899024614", pack: NotoEmojiAnimated, index: 42}  # writing hand
-  "📝": {id: "5219917343899024614", pack: NotoEmojiAnimated, index: 42}  # writing hand
-  "📰": {id: "5343584905643180151", pack: PremiumIcons, index: 10}  # orange document tile
-  "😀": {id: "5343930942568283286", pack: PremiumIcons, index: 16}  # pink smiley tile
-  "📡": {id: "5429482572230965990", pack: PremiumIcons, index: 46}  # Telegram plane badge
-  "📢": {id: "5400038655861466061", pack: PremiumIcons, index: 39}  # NEW gradient tile
-  "📣": {id: "5400038655861466061", pack: PremiumIcons, index: 39}  # NEW gradient tile
-  "⚙️": {id: "5368682684476308830", pack: PremiumIcons, index: 23}  # blue chat-with-sliders tile
-  "🕒": {id: "5431672893882778047", pack: PremiumIcons, index: 33}  # purple clock tile
-  "⏰": {id: "5431672893882778047", pack: PremiumIcons, index: 33}  # purple clock tile
-  "⏳": {id: "5431672893882778047", pack: PremiumIcons, index: 33}  # purple clock tile
-  "✨": {id: "5221980766447107121", pack: NotoEmojiAnimated, index: 92}  # Google animated sparkles
-  "⭐": {id: "5348247994586121380", pack: PremiumIcons, index: 56}  # gold sparkling star
-  "🔥": {id: "5219892836815634821", pack: NotoEmojiAnimated, index: 5}  # Google animated fire
-  "📦": {id: "5343863498696833806", pack: PremiumIcons, index: 18}  # purple cards tile
-  "🏷️": {id: "5429166458343011591", pack: PremiumIcons, index: 28}  # green sticker tile
-  "🎨": {id: "5341665785406308254", pack: PremiumIcons, index: 19}  # purple brush tile
-  "🧪": {id: "5343766389486272458", pack: PremiumIcons, index: 14}  # pink speedometer tile
-  "📍": {id: "5431626942027677918", pack: PremiumIcons, index: 34}  # blue location tile
-  "📌": {id: "5431626942027677918", pack: PremiumIcons, index: 34}  # blue location tile
-  "🔕": {id: "5427104474608974234", pack: PremiumIcons, index: 24}  # blue muted tile
-  "📨": {id: "5431388979364643149", pack: PremiumIcons, index: 31}  # pink send-arrow bubble
-  "📎": {id: "5341285075210224047", pack: PremiumIcons, index: 20}  # purple gallery tile
-  "🖼️": {id: "5341285075210224047", pack: PremiumIcons, index: 20}  # purple gallery tile
-  "🎬": {id: "5429584229811896096", pack: PremiumIcons, index: 27}  # green play tile
-  "🎮": {id: "5222326554264107460", pack: NotoEmojiAnimated, index: 70}  # Google animated space invader
-  "🛒": {id: "5431646131941556182", pack: PremiumIcons, index: 29}  # green shop tile
-  "💘": {id: "5219882649153207706", pack: NotoEmojiAnimated, index: 0}  # Google animated sparkling heart
-  "💞": {id: "5219975764044187346", pack: NotoEmojiAnimated, index: 150}  # Google animated revolving hearts
-  "🎁": {id: "5426999892155318407", pack: PremiumIcons, index: 38}  # gradient gift tile
-  "💼": {id: "5431745143822632981", pack: PremiumIcons, index: 35}  # blue briefcase tile
-  "😎": {id: "5219714264960367488", pack: NotoEmojiAnimated, index: 88}  # Google animated cool face
-  "😂": {id: "5219836933521310655", pack: NotoEmojiAnimated, index: 16}  # Google animated tears of joy
-  "🥰": {id: "5220151514105937555", pack: NotoEmojiAnimated, index: 22}  # Google animated hearts face
-  "❤️‍🔥": {id: "5222274525030283328", pack: NotoEmojiAnimated, index: 33}  # Google animated heart on fire
-  "❤️": {id: "5220182699863475994", pack: NotoEmojiAnimated, index: 20}  # Google animated red heart
-  "🎉": {id: "5219691329835005804", pack: NotoEmojiAnimated, index: 1}  # Google animated party popper
-  "👋": {id: "5222099406328722117", pack: NotoEmojiAnimated, index: 75}  # Google animated waving hand
-  "👀": {id: "5219868574545378630", pack: NotoEmojiAnimated, index: 125}  # Google animated eyes
-  "👌": {id: "5220198479573320510", pack: NotoEmojiAnimated, index: 74}  # Google animated OK hand
-  "💰": {id: "5431416651838932108", pack: PremiumIcons, index: 63}  # gold coin
-  "⚠️": {id: "5345814569195421891", pack: TopicIcons, index: 47}  # Telegram animated exclamation
-  "❔": {id: "5348337458754894202", pack: TopicIcons, index: 46}  # Telegram animated question mark
-  "ℹ️": {id: "5323538339062628165", pack: TopicIcons, index: 109}  # Telegram animated speech dots
-  "⬅️": {id: "5429504489449076996", pack: AdaptiveLines, index: 13}  # animated left arrow (adapts to theme)
-  "⏭": {id: "5431352862984651645", pack: AdaptiveLines, index: 12}  # animated right arrow
-  "✖️": {id: "5465665476971471368", pack: RestrictedEmoji, index: 684}  # animated red cross
-  "🔁": {id: "5264727218734524899", pack: RestrictedEmoji, index: 709}  # animated arrows
-  "🚪": {id: "5222099406328722117", pack: NotoEmojiAnimated, index: 75}  # waving hand
-  "🗓️": {id: "5364233403300330811", pack: TopicIcons, index: 13}  # animated calendar
-  "📅": {id: "5364233403300330811", pack: TopicIcons, index: 13}  # animated calendar
+  "⏰": {id: "5413704112220949842", pack: RestrictedEmoji, motion: 2813}
+  "⏳": {id: "5451732530048802485", pack: RestrictedEmoji, motion: 9235}
+  "✅": {id: "5427009714745517609", pack: RestrictedEmoji, motion: 111}
+  "✍️": {id: "5219917343899024614", pack: NotoEmojiAnimated, motion: 347}
+  "✏️": {id: "5334673106202010226", pack: RestrictedEmoji, motion: 1774}
+  "✖️": {id: "5226660202035554522", pack: RestrictedEmoji, motion: 263}
+  "✨": {id: "5221980766447107121", pack: NotoEmojiAnimated, motion: 1037}
+  "❌": {id: "5465665476971471368", pack: RestrictedEmoji, motion: 245}
+  "❔": {id: "5467461928647399673", pack: RestrictedEmoji, motion: 355}
+  "❗": {id: "5467928559664242360", pack: RestrictedEmoji, motion: 39}
+  "❤️": {id: "5220182699863475994", pack: NotoEmojiAnimated, motion: 173}
+  "❤️‍🔥": {id: "5222274525030283328", pack: NotoEmojiAnimated, motion: 2770}
+  "➕": {id: "5226945370684140473", pack: RestrictedEmoji, motion: 130}
+  "⭐": {id: "5260725503215543617", pack: PremiumIcons, motion: 6079}
+  "🌍": {id: "5399898266265475100", pack: RestrictedEmoji, motion: 8967}
+  "🌛": {id: "5465643984955120548", pack: RestrictedEmoji, motion: 3695}
+  "🌞": {id: "5222098856572908782", pack: NotoEmojiAnimated, motion: 844}
+  "🎁": {id: "5426875157715105521", pack: PremiumIcons, motion: 18602}
+  "🎉": {id: "5219691329835005804", pack: NotoEmojiAnimated, motion: 2412}
+  "🎟": {id: "5377599075237502153", pack: RestrictedEmoji, motion: 3413}
+  "🎨": {id: "5431456208487716895", pack: RestrictedEmoji, motion: 4279}
+  "🎬": {id: "5375464961822695044", pack: RestrictedEmoji, motion: 4523}
+  "🎭": {id: "5359441070201513074", pack: RestrictedEmoji, motion: 2976}
+  "🎮": {id: "5467583879948803288", pack: RestrictedEmoji, motion: 1665}
+  "🏁": {id: "5411520005386806155", pack: RestrictedEmoji, motion: 710}
+  "🏠": {id: "5465226866321268133", pack: RestrictedEmoji, motion: 4672}
+  "👀": {id: "5219868574545378630", pack: NotoEmojiAnimated, motion: 374}
+  "👈": {id: "5469735272017043817", pack: RestrictedEmoji, motion: 619}
+  "👉": {id: "5471978009449731768", pack: RestrictedEmoji, motion: 492}
+  "👋": {id: "5222099406328722117", pack: NotoEmojiAnimated, motion: 1252}
+  "👌": {id: "5220198479573320510", pack: NotoEmojiAnimated, motion: 166}
+  "👥": {id: "5372926953978341366", pack: RestrictedEmoji, motion: 224}
+  "💘": {id: "5219827501773127389", pack: NotoEmojiAnimated, motion: 860}
+  "💞": {id: "5219975764044187346", pack: NotoEmojiAnimated, motion: 1344}
+  "💡": {id: "5472146462362048818", pack: RestrictedEmoji, motion: 1104}
+  "💤": {id: "5451959871257713464", pack: RestrictedEmoji, motion: 4709}
+  "💰": {id: "5434085514451895232", pack: PremiumIcons, motion: 2585}
+  "💸": {id: "5472030678633684592", pack: RestrictedEmoji, motion: 5947}
+  "💼": {id: "5359785904535774578", pack: RestrictedEmoji, motion: 3588}
+  "📆": {id: "5431897022456145283", pack: RestrictedEmoji, motion: 8754}
+  "📎": {id: "5377844313575150051", pack: RestrictedEmoji, motion: 2237}
+  "📖": {id: "5226512880362332956", pack: RestrictedEmoji, motion: 8769}
+  "📝": {id: "5334882760735598374", pack: RestrictedEmoji, motion: 1722}
+  "📣": {id: "5469903029144657419", pack: RestrictedEmoji, motion: 11683}
+  "📤": {id: "5433614747381538714", pack: RestrictedEmoji, motion: 4414}
+  "📥": {id: "5433811242135331842", pack: RestrictedEmoji, motion: 3028}
+  "📰": {id: "5433982607035474385", pack: RestrictedEmoji, motion: 11489}
+  "🔄": {id: "5264727218734524899", pack: RestrictedEmoji, motion: 1114}
+  "🔕": {id: "5244807637157029775", pack: RestrictedEmoji, motion: 179}
+  "🔗": {id: "5375129357373165375", pack: RestrictedEmoji, motion: 1054}
+  "🔥": {id: "5219892836815634821", pack: NotoEmojiAnimated, motion: 748}
+  "🖼": {id: "5375074927252621134", pack: RestrictedEmoji, motion: 2463}
+  "🗂": {id: "5431736674147114227", pack: RestrictedEmoji, motion: 898}
+  "😀": {id: "5220082270643188625", pack: NotoEmojiAnimated, motion: 834}
+  "😂": {id: "5219836933521310655", pack: NotoEmojiAnimated, motion: 872}
+  "😎": {id: "5219714264960367488", pack: NotoEmojiAnimated, motion: 403}
+  "🚀": {id: "5445284980978621387", pack: RestrictedEmoji, motion: 12390}
+  "🛂": {id: "5429612430567155314", pack: RestrictedEmoji, motion: 632}
+  "🛒": {id: "5431499171045581032", pack: RestrictedEmoji, motion: 9304}
+  "🤖": {id: "5220183318338764222", pack: NotoEmojiAnimated, motion: 9202}
+  "🥰": {id: "5220151514105937555", pack: NotoEmojiAnimated, motion: 1519}
+  "🥺": {id: "5373230475022179039", pack: RestrictedEmoji, motion: 1151}
+  "🧠": {id: "5237799019329105246", pack: RestrictedEmoji, motion: 10437}
+  "🧪": {id: "5411512278740640309", pack: RestrictedEmoji, motion: 39975}
+  "🧭": {id: "5433825729060018456", pack: RestrictedEmoji, motion: 648}
+  "🧰": {id: "5449428597922079323", pack: RestrictedEmoji, motion: 4359}

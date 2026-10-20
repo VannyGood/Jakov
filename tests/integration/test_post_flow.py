@@ -48,20 +48,22 @@ async def test_full_wizard_send_edit_delete(dp: Dispatcher, bot: Bot, fake_sessi
     await feed(bot, text_update("in 3 days"))
     assert "Pick a tone" in sent_texts(fake_session)[-1]
     await feed(bot, button_update(PostCb(action="tone", post=post.id, value=0).pack()))
-    await feed(bot, button_update(PostCb(action="nomedia", post=post.id).pack()))
-    fake_session.calls.clear()
+    assert "Almost done" in sent_texts(fake_session)[-1]
     await feed(bot, text_update("Buy - https://shop.io\nbroken line"))
+    extras = sent_texts(fake_session)[-1]
+    assert "Buttons added" in extras and "broken line" in extras and "Buy" in extras
+    fake_session.calls.clear()
+    await feed(bot, button_update(PostCb(action="create", post=post.id).pack()))
 
     previews = fake_session.called("SendMessage")
     texts = [m.text for m in previews]
-    assert any("broken line" in t for t in texts)  # partial error reported
     post_previews = [m for m in previews if m.reply_markup and any(
         "Use this" in b.text for row in m.reply_markup.inline_keyboard for b in row)]
     assert len(post_previews) == 3
     assert all("air max &lt;90&gt;" in m.text.lower() for m in post_previews)  # escaped
     assert all(m.reply_markup.inline_keyboard[0][0].url == "https://shop.io"
                for m in post_previews)
-    assert "3 variations" in texts[-1]
+    assert "3 versions" in texts[-1] and "built-in writer" in texts[-1]
 
     # Regenerate deletes the old previews.
     await feed(bot, button_update(PostCb(action="regen", post=post.id).pack()))
@@ -70,15 +72,15 @@ async def test_full_wizard_send_edit_delete(dp: Dispatcher, bot: Bot, fake_sessi
     await feed(bot, button_update(PostCb(action="use", post=post.id, value=1).pack()))
     assert "Post ready" in sent_texts(fake_session)[-1]
     await feed(bot, button_update(PostCb(action="opt_pin", post=post.id).pack()))
-    assert "Pin: On" in str(fake_session.calls[-2].reply_markup)
+    assert "Pin on" in str(fake_session.called("EditMessageText")[-1].reply_markup)
     await feed(bot, button_update(PostCb(action="send", post=post.id).pack()))
-    await feed(bot, button_update(PostCb(action="sendto", post=post.id, value=chat_pk).pack()))
-    assert "Send to <b>Shop</b>" in sent_texts(fake_session)[-1]
+    # Only one chat linked: straight to the confirmation, no picker.
+    assert "Post to <b>Shop</b>" in sent_texts(fake_session)[-1]
     fake_session.calls.clear()
     await feed(bot, button_update(PostCb(action="sendgo", post=post.id, value=chat_pk).pack()))
 
     channel_msgs = [c for c in fake_session.called("SendMessage") if c.chat_id == -1009]
-    assert len(channel_msgs) == 1 and "Air Max &lt;90&gt;" in channel_msgs[0].text
+    assert len(channel_msgs) == 1 and "air max &lt;90&gt;" in channel_msgs[0].text.lower()
     assert "Use this" not in str(channel_msgs[0].reply_markup)  # picker rows never published
     assert fake_session.called("PinChatMessage")
     assert "Published" in sent_texts(fake_session)[-1]
@@ -155,19 +157,21 @@ async def test_menus_are_animated_for_admin(dp: Dispatcher, bot: Bot, fake_sessi
     fake_session.on("GetStickerSet", lambda m: StickerSet(
         name="RestrictedEmoji", title="Animated", sticker_type="custom_emoji",
         stickers=[Sticker(file_id="a", file_unique_id="a", type="custom_emoji", width=1,
-                          height=1, is_animated=True, is_video=False, emoji="📡",
+                          height=1, is_animated=True, is_video=False, emoji="📣",
                           custom_emoji_id="555")]))
     await dp.feed_update(bot, text_update("/emojipack RestrictedEmoji"))
+    async with ctx.sessions() as s:  # as measured by the motion backfill
+        for item in await EmojiRepo(s, OWNER).all():
+            item.motion = 250.0
+        await s.commit()
+    await ctx.reload_emoji()
     ctx.ui.dm_supported = True
     bot.session.middleware(AnimatedUiMiddleware(ctx.ui))
     fake_session.calls.clear()
     await dp.feed_update(bot, button_update(MenuCb(to="main").pack()))
     edit = fake_session.called("EditMessageText")[-1]
-    curated = ctx.catalog.ui_icons["📡"]
-    assert f'emoji-id="{curated}"' in edit.text  # curated Premium icon beats the pack
     buttons = [b for row in edit.reply_markup.inline_keyboard for b in row]
     channels = next(b for b in buttons if b.text == "Channels")
-    assert channels.icon_custom_emoji_id == curated
-    # Emoji without a curated icon come from the library.
-    assert ctx.library.ui_map(None)["📡"] == curated
-    assert ctx.library.ui_map("RestrictedEmoji")["📡"] == "555"  # a chosen pack wins
+    assert channels.icon_custom_emoji_id == "555"  # alive library emoji animate the button
+    create = next(b for b in buttons if b.text.endswith("Create a post"))
+    assert create.style == "primary"

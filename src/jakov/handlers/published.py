@@ -94,9 +94,9 @@ async def _card(target: Message | CallbackQuery, record: PublishedPost, chat: Ch
     if record.edited_at:
         lines.append(f"Edited: {format_local(record.edited_at, zone)}")
     if record.deleted_at:
-        lines.append("🗑 Deleted from the chat")
+        lines.append("❌ Deleted from the chat")
     if record.pinned:
-        lines.append("📌 Pinned")
+        lines.append("⭐ Pinned")
     lines.append(f"\n<i>{html.escape(_snippet(record, 300))}</i>")
     link = message_link(chat, record.tg_chat_id, record.message_id)
     await show(target, prefix + "\n".join(lines), published_kb(record, link))
@@ -143,7 +143,7 @@ async def msg_edit(message: Message, bot: Bot, ctx: AppContext, session: AsyncSe
     try:
         await edit_published(bot, record, message.html_text)
     except PublishError as exc:
-        await message.answer(f"⚠️ {html.escape(str(exc))}", reply_markup=cancel_kb())
+        await message.answer(f"❗ {html.escape(str(exc))}", reply_markup=cancel_kb())
         return
     await state.clear()
     await _card(message, record, chat, ctx, session, message.from_user.id, "✅ Edited.\n\n")
@@ -154,7 +154,7 @@ async def cb_delete(callback: CallbackQuery, callback_data: PubCb, ctx: AppConte
                     session: AsyncSession) -> None:
     loaded = await _load(callback, ctx, session, callback_data.pk)
     if loaded:
-        await show(callback, "🗑 Delete this post from the chat? This can't be undone.",
+        await show(callback, "❌ Delete this post from the chat? This can't be undone.",
                    confirm_delete_kb(loaded[0]))
         await callback.answer()
 
@@ -172,5 +172,5 @@ async def cb_delete_go(callback: CallbackQuery, callback_data: PubCb, bot: Bot,
         await callback.answer(str(exc), show_alert=True)
         return
     await session.flush()
-    await _card(callback, record, chat, ctx, session, callback.from_user.id, "🗑 Deleted.\n\n")
+    await _card(callback, record, chat, ctx, session, callback.from_user.id, "❌ Deleted.\n\n")
     await callback.answer("Deleted")

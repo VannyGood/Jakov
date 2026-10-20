@@ -32,7 +32,7 @@ async def test_admin_start_runs_emoji_probe_and_shows_menu(
     texts = sent_texts(fake_session)
     assert any('emoji-id="42"' in t for t in texts)
     assert any("Animated custom emoji work" in t for t in texts)
-    assert any("Jakov control panel" in t for t in texts)
+    assert any("Welcome to Jakov" in t for t in texts)  # no channel linked yet
     assert any("Set my timezone" in str(c.reply_markup) for c in fake_session.calls
                if type(c).__name__ == "SendMessage")
     # Second /start doesn't re-run the probe.

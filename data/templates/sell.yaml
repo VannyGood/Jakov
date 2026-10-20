@@ -12,7 +12,7 @@ questions:
     required: false
     max_len: 40
   - key: offer
-    prompt: "🏷 Any special offer? (e.g. <i>-30% today only</i>, <i>free shipping</i>)"
+    prompt: "💸 Any special offer? (e.g. <i>-30% today only</i>, <i>free shipping</i>)"
     required: false
     max_len: 120
   - key: deadline

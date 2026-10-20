@@ -6,13 +6,14 @@ import contextlib
 import html
 
 from aiogram import Bot, F
+from aiogram.enums import ChatAction
 from aiogram.exceptions import TelegramAPIError
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from jakov.context import AppContext
-from jakov.db.models import Post
+from jakov.db.models import Chat, Post
 from jakov.db.repositories.chats import ChatRepo
 from jakov.db.repositories.posts import PostRepo
 from jakov.handlers.post_wizard.common import (
@@ -72,11 +73,13 @@ async def show_previews(target: Message | CallbackQuery, bot: Bot, post: Post, c
                         session: AsyncSession, state: FSMContext, *, fresh: bool) -> None:
     chat_id = _user_id(target)
     if fresh:
+        with contextlib.suppress(TelegramAPIError):
+            await bot.send_chat_action(chat_id, ChatAction.TYPING)
         try:
             await generate_variations(session, ctx.owner_id, post, ctx.generator, ctx.catalog,
                                       ctx.library)
         except DraftError as exc:
-            await show(target, f"⚠️ {html.escape(str(exc))}", cancel_kb())
+            await show(target, f"❗ {html.escape(str(exc))}", cancel_kb())
             return
     await _clear_previews(bot, chat_id, state)
     sent: list[int] = []
@@ -91,24 +94,34 @@ async def show_previews(target: Message | CallbackQuery, bot: Bot, post: Post, c
                 extra_rows=preview_extra_rows(post, variation.idx))
         except TelegramAPIError as exc:
             log.warning("preview_failed", post_id=post.id, error=str(exc))
-            await bot.send_message(chat_id, f"⚠️ Preview #{variation.idx + 1} failed: "
+            await bot.send_message(chat_id, f"❗ Preview #{variation.idx + 1} failed: "
                                             f"{html.escape(str(exc))}")
             continue
         sent.append(message.message_id)
     review = await bot.send_message(
         chat_id,
-        f"👀 <b>{len(post.variations)} variations</b> above · {summary_line(post, ctx)}\n\n"
-        "Tap <b>✅ Use this</b> under your favourite, or rotate all of them so repeated "
-        "posts never look the same.",
+        f"👀 <b>{len(post.variations)} versions</b> above · {summary_line(post, ctx)}\n"
+        f"{writer_line(post, ctx)}\n\n"
+        "Tap <b>✅ Use this</b> under your favourite, or use all of them in rotation.",
         reply_markup=review_kb(post, style_label(post)))
     sent.append(review.message_id)
     await state.set_state(PostWizard.reviewing)
     await state.update_data(post=post.id, previews=sent)
 
 
+def writer_line(post: Post, ctx: AppContext) -> str:
+    model = getattr(ctx.generator, "model", None)
+    sources = {v.source for v in post.variations}
+    if "llm" in sources:
+        return f"🧠 Written by AI ({html.escape(model or 'local model')})"
+    if model:
+        return "📝 AI writer unavailable right now, so I used the built-in writer."
+    return "📝 Written by the built-in writer"
+
+
 async def _ready_text(post: Post, ctx: AppContext) -> str:
     if post.rotate:
-        which = f"🔁 rotating all {len(post.variations)} variations"
+        which = f"🔄 rotating all {len(post.variations)} variations"
     else:
         which = f"✅ variation #{(post.chosen_index or 0) + 1}"
     media = {"photo": "🖼 photo", "video": "🎬 video"}.get(post.media_kind or "", "text only")
@@ -205,7 +218,7 @@ async def msg_edit_text(message: Message, bot: Bot, ctx: AppContext, session: As
         await set_custom_text(session, ctx.owner_id, post, idx, new_html, ctx.catalog,
                               ctx.library)
     except DraftError as exc:
-        await message.answer(f"⚠️ {html.escape(str(exc))}", reply_markup=cancel_kb())
+        await message.answer(f"❗ {html.escape(str(exc))}", reply_markup=cancel_kb())
         return
     await message.answer(f"✅ Variation #{idx + 1} updated.")
     await show_previews(message, bot, post, ctx, session, state, fresh=False)
@@ -264,10 +277,13 @@ async def cb_send(callback: CallbackQuery, callback_data: PostCb, ctx: AppContex
     chats = [c for c in await ChatRepo(session, ctx.owner_id).list(include_inactive=False)
              if c.can_post]
     if not chats:
-        await callback.answer("No chats where I can post. Link one in 📡 Channels first.",
+        await callback.answer("No chats where I can post. Link one in 📣 Channels first.",
                               show_alert=True)
         return
-    await show(callback, "📨 <b>Send now</b>: where to?", chat_picker_kb(post, chats))
+    if len(chats) == 1:  # nothing to choose: go straight to the confirmation
+        await _confirm_send(callback, post, chats[0])
+    else:
+        await show(callback, "🚀 <b>Post now</b>: where to?", chat_picker_kb(post, chats))
     await callback.answer()
 
 
@@ -279,16 +295,20 @@ async def cb_sendto(callback: CallbackQuery, callback_data: PostCb, ctx: AppCont
     if post is None or chat is None:
         await callback.answer("Not available anymore.", show_alert=True)
         return
+    await _confirm_send(callback, post, chat)
+    await callback.answer()
+
+
+async def _confirm_send(callback: CallbackQuery, post: Post, chat: Chat) -> None:
     emoji_note = {True: "✨ animated emoji work there",
                   False: "normal emoji will be used there",
                   None: "animated emoji not tested there yet; I'll check on send"}
-    options = [name for name, on in (("📌 pin", post.pin), ("🔕 silent", post.silent)) if on]
+    options = [name for name, on in (("⭐ pin", post.pin), ("🔕 silent", post.silent)) if on]
     await show(callback,
-               f"Send to <b>{html.escape(chat.name)}</b> now?\n\n"
+               f"🚀 Post to <b>{html.escape(chat.name)}</b> now?\n\n"
                f"• {emoji_note[chat.custom_emoji_ok]}\n"
                f"• options: {', '.join(options) or 'none'}",
                confirm_send_kb(post, chat))
-    await callback.answer()
 
 
 @router.callback_query(PostCb.filter(F.action == "sendgo"))
@@ -304,13 +324,13 @@ async def cb_sendgo(callback: CallbackQuery, callback_data: PostCb, bot: Bot, ct
         record, notes = await publish(bot, session, ctx.owner_id, post, chat, ctx.catalog,
                                       ctx.library, ctx.queue)
     except PublishError as exc:
-        hint = "\n\nOpen 📡 Channels → the chat → 🔄 Re-check rights." if exc.lost_access else ""
-        await show(callback, f"⚠️ {html.escape(str(exc))}{hint}", ready_kb(post))
+        hint = "\n\nOpen 📣 Channels → the chat → 🔄 Re-check rights." if exc.lost_access else ""
+        await show(callback, f"❗ {html.escape(str(exc))}{hint}", ready_kb(post))
         return
     await session.commit()
     await state.clear()
     text = f"✅ <b>Published</b> in {html.escape(chat.name)}."
     if notes:
-        text += "\n" + "\n".join(f"ℹ️ {html.escape(n)}" for n in notes)
+        text += "\n" + "\n".join(f"💡 {html.escape(n)}" for n in notes)
     link = message_link(chat, record.tg_chat_id, record.message_id)
     await show(callback, text, published_kb(record, link, back_to_list=False))

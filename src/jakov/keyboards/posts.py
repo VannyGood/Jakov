@@ -1,141 +1,122 @@
 from __future__ import annotations
 
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from jakov.db.models import Chat, Post, PublishedPost
 from jakov.engine.catalog import Catalog, Question
 from jakov.keyboards.callbacks import MenuCb, PostCb, PubCb, SchCb
 from jakov.keyboards.common import cancel_button
+from jakov.keyboards.ui import Style, btn, grid, kb, url_btn
 
 
-def _btn(text: str, action: str, post: int = 0, value: int = 0) -> InlineKeyboardButton:
-    return InlineKeyboardButton(text=text,
-                                callback_data=PostCb(action=action, post=post, value=value).pack())
+def _b(text: str, action: str, post: int = 0, value: int = 0, style: Style = None
+       ) -> InlineKeyboardButton:
+    return btn(text, PostCb(action=action, post=post, value=value), style)
 
 
 def type_picker_kb(catalog: Catalog) -> InlineKeyboardMarkup:
-    kb = InlineKeyboardBuilder()
-    for index, key in enumerate(catalog.type_order):
-        kb.button(text=catalog.types[key].title, callback_data=PostCb(action="type", value=index))
-    kb.adjust(2)
-    kb.row(cancel_button())
-    return kb.as_markup()
+    buttons = [_b(catalog.types[key].title, "type", value=i)
+               for i, key in enumerate(catalog.type_order)]
+    return InlineKeyboardMarkup(inline_keyboard=[*grid(buttons, 2), [cancel_button()]])
 
 
 def question_kb(post: Post, question: Question) -> InlineKeyboardMarkup:
     rows: list[list[InlineKeyboardButton]] = []
     if question.kind == "choice":
-        buttons = [_btn(o.label, "choice", post.id, i) for i, o in enumerate(question.options)]
-        rows += [buttons[i:i + 2] for i in range(0, len(buttons), 2)]
+        rows += grid([_b(o.label, "choice", post.id, i)
+                      for i, o in enumerate(question.options)], 2)
     if not question.required:
-        rows.append([_btn("⏭ Skip", "skip", post.id)])
+        rows.append([_b("👉 Skip", "skip", post.id)])
     rows.append([cancel_button()])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def tone_kb(post: Post, catalog: Catalog) -> InlineKeyboardMarkup:
-    buttons = [_btn(t.title, "tone", post.id, i) for i, t in enumerate(catalog.tones.values())]
-    rows = [buttons[i:i + 2] for i in range(0, len(buttons), 2)]
+    buttons = [_b(t.title, "tone", post.id, i) for i, t in enumerate(catalog.tones.values())]
+    return InlineKeyboardMarkup(inline_keyboard=[*grid(buttons, 2), [cancel_button()]])
+
+
+def extras_kb(post: Post) -> InlineKeyboardMarkup:
+    rows = [[_b("✨ Create my post", "create", post.id, style="success")]]
+    removals = []
+    if post.has_media:
+        removals.append(_b("❌ Remove media", "nomedia", post.id))
+    if post.buttons:
+        removals.append(_b("❌ Remove buttons", "nobuttons", post.id))
+    if removals:
+        rows.append(removals)
     rows.append([cancel_button()])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def media_kb(post: Post) -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [_btn("⏭ Text only", "nomedia", post.id)], [cancel_button()]])
-
-
-def buttons_kb(post: Post) -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [_btn("⏭ No buttons", "nobuttons", post.id)], [cancel_button()]])
-
-
 def preview_extra_rows(post: Post, idx: int) -> list[list[InlineKeyboardButton]]:
     """Picker row attached under each preview (below the post's own URL buttons)."""
-    return [[_btn(f"✅ Use this (#{idx + 1})", "use", post.id, idx),
-             _btn(f"✏️ Edit #{idx + 1}", "editpick", post.id, idx)]]
+    return [[_b(f"✅ Use this · #{idx + 1}", "use", post.id, idx, "success"),
+             _b("✏️ Edit", "editpick", post.id, idx)]]
 
 
 def review_kb(post: Post, style_label: str) -> InlineKeyboardMarkup:
-    count = len(post.variations)
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [_btn(f"🔁 Rotate all {count}", "rotate", post.id)],
-        [_btn("🔄 Regenerate", "regen", post.id), _btn("🎭 Change emojis", "emojis", post.id)],
-        [_btn(f"🎨 Style: {style_label}", "style", post.id)],
-        [cancel_button()],
-    ])
+    return kb(
+        _b(f"🔄 Use all {len(post.variations)} (rotate)", "rotate", post.id, style="success"),
+        [_b("🔄 New texts", "regen", post.id), _b("🎭 New emojis", "emojis", post.id)],
+        _b(f"🎨 Emoji style: {style_label}", "style", post.id),
+        cancel_button(),
+    )
 
 
 def ready_kb(post: Post) -> InlineKeyboardMarkup:
     def flag(on: bool) -> str:
-        return "On" if on else "Off"
+        return "on" if on else "off"
 
-    rows = [[_btn(f"📌 Pin: {flag(post.pin)}", "opt_pin", post.id),
-             _btn(f"🔕 Silent: {flag(post.silent)}", "opt_silent", post.id)]]
+    options = [_b(f"⭐ Pin {flag(post.pin)}", "opt_pin", post.id),
+               _b(f"🔕 Silent {flag(post.silent)}", "opt_silent", post.id)]
     if not post.has_media:
-        rows.append([_btn(f"🔗 Link preview: {flag(post.link_preview)}", "opt_preview", post.id)])
-    rows.append([_btn("📨 Send now", "send", post.id),
-                 InlineKeyboardButton(text="⏰ Schedule", callback_data=SchCb(
-                     action="new", pk=post.id).pack())])
-    rows.append([_btn("⬅️ Back to variations", "back", post.id),
-                 _btn("✖️ Close", "close", post.id)])
-    return InlineKeyboardMarkup(inline_keyboard=rows)
+        options.append(_b(f"🔗 Preview {flag(post.link_preview)}", "opt_preview", post.id))
+    return kb(
+        [_b("🚀 Post now", "send", post.id, style="success"),
+         btn("⏰ Schedule", SchCb(action="new", pk=post.id), "primary")],
+        options,
+        [_b("👈 Other variation", "back", post.id), _b("Done", "close", post.id)],
+    )
 
 
 def chat_picker_kb(post: Post, chats: list[Chat]) -> InlineKeyboardMarkup:
-    rows = [[_btn(f"📢 {c.name}"[:60], "sendto", post.id, c.id)] for c in chats]
-    rows.append([_btn("⬅️ Back", "ready", post.id)])
+    rows = [[_b(f"📣 {c.name}"[:60], "sendto", post.id, c.id)] for c in chats]
+    rows.append([_b("👈 Back", "ready", post.id)])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def confirm_send_kb(post: Post, chat: Chat) -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [_btn("✅ Send it", "sendgo", post.id, chat.id)],
-        [_btn("⬅️ Back", "send", post.id)],
-    ])
+    return kb(_b("🚀 Post it now", "sendgo", post.id, chat.id, "success"),
+              _b("👈 Back", "ready", post.id))
 
 
 def published_kb(record: PublishedPost, link: str, *, back_to_list: bool = True
                  ) -> InlineKeyboardMarkup:
-    rows = [[InlineKeyboardButton(text="🔗 Open post", url=link)]]
+    rows = [[url_btn("🔗 Open post", link)]]
     if record.deleted_at is None:
-        rows.append([
-            InlineKeyboardButton(text="✏️ Edit text",
-                                 callback_data=PubCb(action="edit", pk=record.id).pack()),
-            InlineKeyboardButton(text="🗑 Delete",
-                                 callback_data=PubCb(action="delete", pk=record.id).pack()),
-        ])
-    rows.append([InlineKeyboardButton(
-        text="⬅️ Published posts" if back_to_list else "⬅️ Menu",
-        callback_data=PubCb(action="list").pack() if back_to_list
-        else MenuCb(to="main").pack())])
+        rows.append([btn("✏️ Edit text", PubCb(action="edit", pk=record.id)),
+                     btn("❌ Delete", PubCb(action="delete", pk=record.id), "danger")])
+    rows.append([btn("👈 Posts", PubCb(action="list")) if back_to_list
+                 else btn("🏠 Menu", MenuCb(to="main"))])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def published_list_kb(records: list[tuple[PublishedPost, str]], page: int, has_more: bool
                       ) -> InlineKeyboardMarkup:
-    kb = InlineKeyboardBuilder()
-    for record, label in records:
-        kb.row(InlineKeyboardButton(text=label[:60],
-                                    callback_data=PubCb(action="open", pk=record.id).pack()))
+    rows = [[btn(label[:60], PubCb(action="open", pk=record.id))] for record, label in records]
     nav = []
     if page > 0:
-        nav.append(InlineKeyboardButton(text="◀️", callback_data=PubCb(
-            action="list", page=page - 1).pack()))
+        nav.append(btn("◀️", PubCb(action="list", page=page - 1)))
     if has_more:
-        nav.append(InlineKeyboardButton(text="▶️", callback_data=PubCb(
-            action="list", page=page + 1).pack()))
+        nav.append(btn("▶️", PubCb(action="list", page=page + 1)))
     if nav:
-        kb.row(*nav)
-    kb.row(InlineKeyboardButton(text="⬅️ Back", callback_data=MenuCb(to="main").pack()))
-    return kb.as_markup()
+        rows.append(nav)
+    rows.append([btn("🏠 Menu", MenuCb(to="main"))])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def confirm_delete_kb(record: PublishedPost) -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🗑 Yes, delete from the chat",
-                              callback_data=PubCb(action="delete_go", pk=record.id).pack())],
-        [InlineKeyboardButton(text="⬅️ Back",
-                              callback_data=PubCb(action="open", pk=record.id).pack())],
-    ])
+    return kb(btn("❌ Yes, delete it from the chat", PubCb(action="delete_go", pk=record.id),
+                  "danger"),
+              btn("👈 Back", PubCb(action="open", pk=record.id)))

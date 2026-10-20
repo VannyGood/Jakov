@@ -47,9 +47,9 @@ MAX_NAME = 64
 async def _list_text(repo: ChatRepo) -> tuple[str, list[Chat]]:
     chats = await repo.list()
     if not chats:
-        return "📡 <b>Channels and groups</b>\n\nNothing linked yet.", chats
+        return "📣 <b>Channels and groups</b>\n\nNothing linked yet.", chats
     return (
-        "📡 <b>Channels and groups</b>\n\n✅ ready · ⚠️ missing rights · 🚫 bot not in chat",
+        "📣 <b>Channels and groups</b>\n\n✅ ready · ❗ missing rights · ❌ bot not in chat",
         chats,
     )
 
@@ -127,7 +127,7 @@ async def msg_add_ref(message: Message, bot: Bot, ctx: AppContext, session: Asyn
         ref = _ref_from_message(message)
         result = await link_chat(bot, ChatRepo(session, ctx.owner_id), ref, message.from_user.id)
     except (ChatRefError, LinkError) as exc:
-        await message.answer(f"⚠️ {html.escape(str(exc))}\n\nTry again or cancel.",
+        await message.answer(f"❗ {html.escape(str(exc))}\n\nTry again or cancel.",
                              reply_markup=cancel_kb())
         return
     await state.clear()
@@ -161,7 +161,7 @@ async def msg_rename(message: Message, ctx: AppContext, session: AsyncSession,
     assert message.from_user is not None and message.text is not None
     name = message.text.strip()
     if len(name) > MAX_NAME:
-        await message.answer(f"⚠️ That's {len(name)} characters; the limit is {MAX_NAME}.",
+        await message.answer(f"❗ That's {len(name)} characters; the limit is {MAX_NAME}.",
                              reply_markup=cancel_kb())
         return
     data = await state.get_data()
@@ -219,19 +219,19 @@ async def cb_emoji_go(callback: CallbackQuery, callback_data: ChannelCb, bot: Bo
         result = await ctx.emoji_probe.probe(bot, chat.tg_chat_id, "Jakov test", silent=True)
     except TelegramAPIError as exc:
         await _show_chat(callback, chat, session, ctx, callback.from_user.id,
-                         f"⚠️ I couldn't post there: {html.escape(str(exc))}\n\n")
+                         f"❗ I couldn't post there: {html.escape(str(exc))}\n\n")
         return
     note = ""
     if result.message is not None:
         try:
             await result.message.delete()
         except TelegramAPIError:
-            note = "\n⚠️ I couldn't delete the test message; please delete it manually."
+            note = "\n❗ I couldn't delete the test message; please delete it manually."
     chat.custom_emoji_ok = result.supported
     await session.flush()
     log.info("emoji_probe", scope="chat", chat_id=chat.tg_chat_id, supported=result.supported)
     head = ("✅ Animated custom emoji work in this chat." if result.supported else
-            f"⚠️ {html.escape(result.detail)} Posts here will use normal emoji automatically.")
+            f"❗ {html.escape(result.detail)} Posts here will use normal emoji automatically.")
     await _show_chat(callback, chat, session, ctx, callback.from_user.id, f"{head}{note}\n\n")
 
 
@@ -245,7 +245,7 @@ async def cb_remove(callback: CallbackQuery, callback_data: ChannelCb, ctx: AppC
         return
     await show(
         callback,
-        f"🗑 Remove <b>{html.escape(chat.name)}</b> from Jakov?\n\n"
+        f"❌ Remove <b>{html.escape(chat.name)}</b> from Jakov?\n\n"
         "<b>Remove</b> forgets it here; I stay in the chat.\n"
         "<b>Remove and leave</b> also makes me leave the chat.",
         confirm_remove_kb(chat),
@@ -265,10 +265,10 @@ async def cb_remove_go(callback: CallbackQuery, callback_data: ChannelCb, bot: B
         try:
             await bot.leave_chat(chat.tg_chat_id)
         except TelegramAPIError as exc:
-            note = f"\n⚠️ Couldn't leave the chat: {html.escape(str(exc))}"
+            note = f"\n❗ Couldn't leave the chat: {html.escape(str(exc))}"
     await repo.delete(chat)
     log.info("chat_removed", chat_id=chat.tg_chat_id, left=callback_data.action == "leave_go")
     text, chats = await _list_text(repo)
-    await show(callback, f"🗑 Removed <b>{html.escape(name)}</b>.{note}\n\n{text}",
+    await show(callback, f"❌ Removed <b>{html.escape(name)}</b>.{note}\n\n{text}",
                channels_list_kb(chats))
     await callback.answer()

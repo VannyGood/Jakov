@@ -12,7 +12,7 @@ questions:
     required: false
     max_len: 500
   - key: when
-    prompt: "📅 Is there a date? (e.g. <i>monday 10:00</i>, <i>01.11</i>), or skip"
+    prompt: "📆 Is there a date? (e.g. <i>monday 10:00</i>, <i>01.11</i>), or skip"
     kind: datetime
     required: false
 points:

@@ -19,6 +19,29 @@ cp .env.example .env      # then fill BOT_TOKEN and ADMIN_IDS
 ```
 
 Requires Python 3.12+ (developed on 3.14). Then open your bot in Telegram and send `/start`.
+That's the only command: everything else is behind buttons.
+
+### AI writer (optional, recommended)
+
+Posts are written by a small **local** model through [Ollama](https://ollama.com), free and
+private:
+
+```bash
+brew install ollama && brew services start ollama   # macOS; see ollama.com for Linux
+ollama pull gemma3:1b                                 # ~800 MB
+```
+
+Settings: `LLM_ENABLED`, `OLLAMA_URL`, `OLLAMA_MODEL`, `LLM_TIMEOUT_S` (see `.env.example`).
+If Ollama isn't running, Jakov automatically uses its built-in writer instead, so posting
+and schedules never fail. ⚙️ Settings shows which writer is active.
+
+How it stays accurate: the model writes only the prose (headline, intro, body, closing,
+call to action), returned as structured JSON. **Facts never pass through the model.** Product,
+price, offer, dates and links are inserted by code from your answers. Every section the
+model returns is checked: invented numbers, links, hashtags, markdown, promises of links that
+don't exist and over-long text are rejected, and the built-in writer fills the gap. Plain
+emoji the model writes become animated ones from your library. AI-written scheduled posts are
+**rewritten fresh on every send**.
 
 ### Getting the values
 
@@ -42,14 +65,15 @@ Anyone who is not in `ADMIN_IDS` gets **no response** in private chat.
 Jakov tracks being added, removed, demoted or losing rights and messages you each time.
 If a group is upgraded to a supergroup, its new ID is picked up automatically.
 
-## Writing posts (✍️ New post or /newpost)
+## Writing posts (✍️ Create a post)
 
 1. Pick a type: 🎮 Game invite, 🛒 Sell something, 💘 Romantic, 📣 Announcement,
    🎁 Giveaway or ✏️ Custom.
 2. Answer a few short questions. Optional ones have **⏭ Skip**. Dates accept
    `friday 20:00`, `25.12 18:00`, `tomorrow 9am`, `in 3 days`, … in your timezone.
-3. Pick a tone (🔥 Hype, 😎 Chill, 😂 Funny, 💼 Serious), then optionally attach one photo or
-   video, and link buttons (`Label - https://link`, one per line).
+3. Pick a tone (🔥 Hype, 😎 Chill, 😂 Funny, 💼 Serious). On the **Almost done** screen, send a
+   photo or video to attach it, or send `Label - https://link` lines to add buttons. Both are
+   optional. Then tap **✨ Create my post**.
 4. Jakov sends **3 real previews**. Under each one: **✅ Use this** or **✏️ Edit**. Below
    them: **🔁 Rotate all 3**, **🔄 Regenerate**, **🎭 Change emojis**, and **🎨 Style**
    (Mixed, or one pack such as Dogs or Snoop Dogg).
@@ -59,7 +83,7 @@ If a group is upgraded to a supergroup, its new ID is picked up automatically.
 Every published post is stored (chat and message ID). **📰 Published** (/posts) lets you
 open, edit the text of, or delete any of them.
 
-### Writing engine (no AI needed)
+### Built-in writer (backup when the AI is off)
 
 Posts are composed from **layouts** (`data/layouts.yaml`) filled with **sections** written per
 post type and tone (`data/templates/<type>.yaml`):
@@ -137,12 +161,21 @@ RestrictedEmoji (animated standard emoji) is only a fallback.
 Emoji are tagged with moods automatically from their base character (🔥 → fire, 💰 → money,
 …), so any pack works with every template right away.
 
+### Only emoji that really move
+
+Some "animated" packs contain emoji whose animation never changes. They look frozen (all
+of GameIcons and MovieIcons, most of PremiumIcons). Jakov downloads every emoji once,
+measures how much its animation moves, and **never uses frozen ones**, neither in menus nor
+in posts. AdaptivePremium, TopicIcons and AdaptiveLines are removed and blocked
+(`retired` in `data/starter_packs.yaml`).
+
 ### Animated menus
 
 Every message and button the bot sends to an admin uses the animated version of its emoji
-(Bot API 9.4 custom emoji and button icons). The default **✨ Premium** style uses
-hand-picked icons from `data/ui_icons.yaml` (glossy PremiumIcons tiles and Google's animated
-Noto emoji). Edit that file to change any icon. In **⚙️ Settings** you can turn animated
+(Bot API 9.4 custom emoji, button icons and **colored buttons**: blue for the main action,
+green to confirm or send, red to cancel or delete). Menu icons come from
+`data/ui_icons.yaml`, generated from the measured motion: Google's animated Noto emoji first,
+then moving PremiumIcons, then Telegram's animated set. In **⚙️ Settings** you can turn animated
 menus off or use any pack as the menu style. Previews and real posts are never rewritten, so a preview always shows
 exactly what will be published.
 

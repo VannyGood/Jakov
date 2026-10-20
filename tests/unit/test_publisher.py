@@ -98,7 +98,7 @@ async def test_publish_records_and_escapes(bot: Bot, fake_session: FakeSession,
     fake_session.on("SendMessage", echo_with_custom(keep=True))
     record, notes = await publish(bot, session, OWNER, post, chat, CATALOG, library(), queue)
     sent = fake_session.called("SendMessage")[0]
-    assert "Air Max &lt;90&gt;" in sent.text and "<tg-emoji" in sent.text
+    assert "air max &lt;90&gt;" in sent.text.lower() and "<tg-emoji" in sent.text
     assert record.message_id == 555 and record.variation_idx == 1 and notes == []
     assert record.custom_emoji_used and post.last_variation_index == 1
 

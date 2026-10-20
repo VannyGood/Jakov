@@ -26,25 +26,25 @@ async def schedule_card(sch: Schedule, ctx: AppContext, session: AsyncSession,
     chat = await ChatRepo(session, ctx.owner_id).get(sch.chat_id)
     post = await PostRepo(session, ctx.owner_id).get(sch.post_id)
     title = ctx.catalog.types[post.post_type].title if post else "Post"
-    status = {"active": "🟢 Active", "paused": "⏸ Paused", "finished": "🏁 Finished"}
+    status = {"active": "✅ Active", "paused": "💤 Paused", "finished": "🏁 Finished"}
     lines = [
-        f"🗓 <b>{title}</b> → <b>{html.escape(chat.name if chat else 'removed chat')}</b>",
+        f"📆 <b>{title}</b> → <b>{html.escape(chat.name if chat else 'removed chat')}</b>",
         f"Status: {status.get(sch.status, sch.status)}",
     ]
     if sch.paused_reason and sch.status == "paused":
         lines.append(f"   <i>{html.escape(sch.paused_reason)}</i>")
     lines += [
         f"⏰ {html.escape(timing_text(sch, zone))}",
-        f"⏹ {html.escape(limit_text(sch, zone))}",
-        f"🔁 Rotate: {'on' if sch.rotate else 'off'} · 🛂 Approval: "
+        f"🏁 {html.escape(limit_text(sch, zone))}",
+        f"🔄 Rotate: {'on' if sch.rotate else 'off'} · 🛂 Approval: "
         f"{'on' if sch.require_approval else 'off'}",
-        f"⏭ Next run: <b>{format_local(sch.next_run_at, zone) if sch.next_run_at else '—'}</b>",
+        f"👉 Next run: <b>{format_local(sch.next_run_at, zone) if sch.next_run_at else '—'}</b>",
     ]
     if sch.last_run_at:
-        lines.append(f"🕒 Last run: {format_local(sch.last_run_at, zone)}")
-    lines.append(f"📨 Sent: <b>{sch.sent_count}</b> · Skipped: {sch.skipped_count}")
+        lines.append(f"⏰ Last run: {format_local(sch.last_run_at, zone)}")
+    lines.append(f"🚀 Sent: <b>{sch.sent_count}</b> · Skipped: {sch.skipped_count}")
     if sch.last_error:
-        lines.append(f"⚠️ Last error: {html.escape(sch.last_error[:200])}")
+        lines.append(f"❗ Last error: {html.escape(sch.last_error[:200])}")
     return "\n".join(lines)
 
 

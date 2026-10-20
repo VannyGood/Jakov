@@ -100,7 +100,10 @@ async def render_variation(
                          generic_moods=post_moods(post, catalog))
     html = render(variation.resolved, RenderInput(values, fields), picker,
                   capitalize=not variation.is_custom)
-    if not custom_emoji:
+    if custom_emoji:
+        # Plain emoji (e.g. written by the AI or typed in answers) become animated ones.
+        html = library.post_emojifier(post.emoji_style).html(html)
+    else:
         html = strip_custom_emoji(html)
     return Rendered(html, "<tg-emoji" in html)
 
@@ -165,7 +168,8 @@ def fresh_spin(variation: PostVariation) -> PostVariation:
     return PostVariation(owner_id=variation.owner_id, idx=variation.idx,
                          template=variation.template,
                          resolved=resolve_spintax(variation.template, rng),
-                         is_custom=variation.is_custom, emoji_seed=rng.randrange(1, 2**62))
+                         is_custom=variation.is_custom, emoji_seed=rng.randrange(1, 2**62),
+                         source=variation.source)
 
 
 def ensure_can_post(chat: Chat) -> None:

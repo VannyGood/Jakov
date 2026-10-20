@@ -1,4 +1,4 @@
-"""🗓 /schedules: list, inspect, pause/resume, send now, edit, history, delete."""
+"""📆 /schedules: list, inspect, pause/resume, send now, edit, history, delete."""
 
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ from jakov.utils.time import format_local
 log = get_logger(__name__)
 router = Router(name="schedules")
 router.message.filter(F.chat.type == ChatType.PRIVATE)
-STATUS_TEXT = {"sent": "✅ sent", "skipped": "⏭ skipped", "expired": "⌛ expired",
+STATUS_TEXT = {"sent": "✅ sent", "skipped": "👉 skipped", "expired": "⌛ expired",
                "failed": "❌ failed", "uncertain": "❔ uncertain", "in_flight": "📤 sending",
                "awaiting_approval": "🛂 waiting for approval"}
 
@@ -48,10 +48,10 @@ async def _list(target: Message | CallbackQuery, ctx: AppContext, session: Async
                 else sch.status)
         items.append((sch, list_label(sch, chat.name if chat else "removed chat", when)))
     active = sum(1 for s in schedules if s.status == "active")
-    text = (f"{prefix}🗓 <b>Schedules</b>: {active} active of {len(schedules)}\n"
-            "🟢 active · ⏸ paused · 🏁 finished")
+    text = (f"{prefix}📆 <b>Schedules</b>: {active} active of {len(schedules)}\n"
+            "✅ active · 💤 paused · 🏁 finished")
     if not schedules:
-        text = (f"{prefix}🗓 <b>Schedules</b>\n\nNothing scheduled yet. Write a post with "
+        text = (f"{prefix}📆 <b>Schedules</b>\n\nNothing scheduled yet. Write a post with "
                 "✍️ New post and tap ⏰ Schedule.")
     await show(target, text, schedules_list_kb(items))
 
@@ -99,12 +99,12 @@ async def cb_pause_resume(callback: CallbackQuery, callback_data: SchCb, ctx: Ap
         return
     if callback_data.action == "pause":
         sch.status, sch.paused_reason = "paused", "Paused by you."
-        note = "Paused ⏸"
+        note = "Paused 💤"
     else:
         chat = await ChatRepo(session, ctx.owner_id).get(sch.chat_id)
         if chat is None or not chat.is_active or not chat.can_post:
             await callback.answer("I still can't post in that chat. Fix my rights in "
-                                  "📡 Channels → 🔄 Re-check rights first.", show_alert=True)
+                                  "📣 Channels → 🔄 Re-check rights first.", show_alert=True)
             return
         now = utcnow()
         rec = recurrence_of(sch)
@@ -134,7 +134,7 @@ async def cb_send_now(callback: CallbackQuery, callback_data: SchCb, ctx: AppCon
     await session.commit()
     ok, reason = await ctx.scheduler.send_now(sch.id)
     await session.refresh(sch)
-    prefix = "✅ Sent now.\n\n" if ok else f"⚠️ Not sent: {html.escape(reason)}\n\n"
+    prefix = "✅ Sent now.\n\n" if ok else f"❗ Not sent: {html.escape(reason)}\n\n"
     await render_schedule(callback, sch, ctx, session, callback.from_user.id, prefix)
 
 
@@ -145,7 +145,7 @@ async def cb_edit(callback: CallbackQuery, callback_data: SchCb, ctx: AppContext
     if sch is None:
         return
     zone, _ = await zone_for(session, ctx, callback.from_user.id)
-    await start_retime(callback, sch, state, zone)
+    await start_retime(callback, sch, state, ctx, session, zone)
     await callback.answer()
 
 
@@ -158,7 +158,7 @@ async def cb_history(callback: CallbackQuery, callback_data: SchCb, ctx: AppCont
     zone_name, _ = await zone_for(session, ctx, callback.from_user.id)
     zone = effective_zone(zone_name, ctx.settings.timezone)
     rows = await ScheduleRepo(session, ctx.owner_id).history(sch.id)
-    lines = ["📜 <b>Last runs</b>"]
+    lines = ["📖 <b>Last runs</b>"]
     for row in rows:
         when = format_local(row.scheduled_for, zone)
         line = f"{STATUS_TEXT.get(row.status, row.status)} · {when}"
@@ -176,7 +176,7 @@ async def cb_delete(callback: CallbackQuery, callback_data: SchCb, ctx: AppConte
                     session: AsyncSession) -> None:
     sch = await _load(callback, ctx, session, callback_data.pk)
     if sch:
-        await show(callback, "🗑 Delete this schedule? Posts already published stay in the chat.",
+        await show(callback, "❌ Delete this schedule? Posts already published stay in the chat.",
                    confirm_delete_kb(sch))
         await callback.answer()
 
@@ -191,5 +191,5 @@ async def cb_delete_go(callback: CallbackQuery, callback_data: SchCb, ctx: AppCo
     await repo.delete(sch)
     await session.commit()
     log.info("schedule_deleted", schedule_id=callback_data.pk)
-    await _list(callback, ctx, session, callback.from_user.id, "🗑 Schedule deleted.\n\n")
+    await _list(callback, ctx, session, callback.from_user.id, "❌ Schedule deleted.\n\n")
     await callback.answer()

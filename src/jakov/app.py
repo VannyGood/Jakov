@@ -26,17 +26,8 @@ from jakov.services.ui_emoji import AnimatedUiMiddleware
 
 log = get_logger(__name__)
 
-ADMIN_COMMANDS = [
-    BotCommand(command="start", description="Main menu"),
-    BotCommand(command="newpost", description="Write a new post"),
-    BotCommand(command="schedules", description="Scheduled posts"),
-    BotCommand(command="posts", description="Published posts: edit or delete"),
-    BotCommand(command="channels", description="Linked channels and groups"),
-    BotCommand(command="emoji", description="Emoji library"),
-    BotCommand(command="addemoji", description="Add custom emoji: /addemoji <mood>"),
-    BotCommand(command="emojipack", description="Import a pack: /emojipack <link>"),
-    BotCommand(command="settings", description="Timezone, animated menus, checks"),
-]
+# One command only: everything else lives behind buttons in the menu.
+ADMIN_COMMANDS = [BotCommand(command="start", description="Open Jakov")]
 
 
 def build_dispatcher(ctx: AppContext) -> Dispatcher:

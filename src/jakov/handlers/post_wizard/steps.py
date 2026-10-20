@@ -18,7 +18,7 @@ from jakov.handlers.post_wizard.common import MAX_BUTTONS, PostWizard, load_post
 from jakov.handlers.post_wizard.preview import show_previews
 from jakov.handlers.views import zone_for
 from jakov.keyboards.callbacks import MenuCb, PostCb
-from jakov.keyboards.posts import buttons_kb, media_kb, question_kb, tone_kb, type_picker_kb
+from jakov.keyboards.posts import extras_kb, question_kb, tone_kb, type_picker_kb
 from jakov.services.drafts import store_moment
 from jakov.services.timezones import effective_zone
 from jakov.utils.buttons import parse_buttons
@@ -97,7 +97,7 @@ async def msg_answer(message: Message, ctx: AppContext, session: AsyncSession,
                              reply_markup=question_kb(post, question))
         return
     if len(text) > question.max_len:
-        await message.answer(f"⚠️ Please keep it under {question.max_len} characters "
+        await message.answer(f"❗ Please keep it under {question.max_len} characters "
                              f"(yours is {len(text)}).", reply_markup=question_kb(post, question))
         return
     if question.kind == "datetime":
@@ -105,7 +105,7 @@ async def msg_answer(message: Message, ctx: AppContext, session: AsyncSession,
         try:
             moment = parse_when(text, now_local)
         except DateParseError as exc:
-            await message.answer(f"⚠️ {html.escape(str(exc))}",
+            await message.answer(f"❗ {html.escape(str(exc))}",
                                  reply_markup=question_kb(post, question))
             return
         store_moment(post, question.key, moment)
@@ -154,84 +154,101 @@ async def cb_tone(callback: CallbackQuery, callback_data: PostCb, ctx: AppContex
         return
     post.tone = tones[callback_data.value]
     await session.flush()
-    await state.set_state(PostWizard.waiting_media)
-    await state.update_data(post=post.id)
     await callback.answer()
-    await show(callback, "📎 <b>Media</b>\n\nSend <b>one photo or video</b> to attach, "
-               "or continue with text only.\n<i>With media, the text limit is 1024 characters.</i>",
-               media_kb(post))
+    await show_extras(callback, post, state)
 
 
-@router.message(PostWizard.waiting_media)
-async def msg_media(message: Message, ctx: AppContext, session: AsyncSession,
-                    state: FSMContext) -> None:
-    data = await state.get_data()
-    post = await PostRepo(session, ctx.owner_id).get(int(data.get("post", 0)))
+def extras_text(post: Post, note: str = "") -> str:
+    media = {"photo": "🖼 photo attached", "video": "🎬 video attached"}.get(
+        post.media_kind or "", "none")
+    links = ", ".join(html.escape(b["text"]) for b in post.buttons) or "none"
+    return (
+        f"{note}✨ <b>Almost done</b>\n\n"
+        f"📎 Media: <b>{media}</b>\n"
+        "   <i>Send a photo or video here to attach it.</i>\n"
+        f"🔗 Buttons: <b>{links}</b>\n"
+        "   <i>Send lines like</i> <code>Shop - https://example.com</code>\n\n"
+        "Both are optional. Tap <b>Create my post</b> when you're ready."
+    )
+
+
+async def show_extras(target: Message | CallbackQuery, post: Post, state: FSMContext,
+                      note: str = "") -> None:
+    await state.set_state(PostWizard.extras)
+    await state.update_data(post=post.id)
+    await show(target, extras_text(post, note), extras_kb(post))
+
+
+async def _extras_post(message: Message, ctx: AppContext, session: AsyncSession,
+                       state: FSMContext) -> Post | None:
+    post = await PostRepo(session, ctx.owner_id).get(int((await state.get_data()).get("post", 0)))
     if post is None:
         await state.clear()
+        await message.answer("This draft no longer exists. Start again from the menu.")
+    return post
+
+
+@router.message(PostWizard.extras, F.photo | F.video)
+async def msg_media(message: Message, ctx: AppContext, session: AsyncSession,
+                    state: FSMContext) -> None:
+    post = await _extras_post(message, ctx, session, state)
+    if post is None:
         return
     if message.photo:
         post.media_kind, post.media_file_id = "photo", message.photo[-1].file_id
     elif message.video:
         post.media_kind, post.media_file_id = "video", message.video.file_id
-    else:
-        await message.answer("Send a photo or a video, or tap “Text only”.",
-                             reply_markup=media_kb(post))
-        return
     await session.flush()
-    await _ask_buttons(message, post, state)
+    await show_extras(message, post, state, "✅ Media attached.\n\n")
 
 
-@router.callback_query(PostCb.filter(F.action == "nomedia"))
-async def cb_nomedia(callback: CallbackQuery, callback_data: PostCb, ctx: AppContext,
-                     session: AsyncSession, state: FSMContext) -> None:
-    post = await load_post(callback, session, ctx, callback_data.post)
-    if post is None:
-        return
-    post.media_kind = post.media_file_id = None
-    await session.flush()
-    await callback.answer()
-    await _ask_buttons(callback, post, state)
-
-
-async def _ask_buttons(target: Message | CallbackQuery, post: Post, state: FSMContext) -> None:
-    await state.set_state(PostWizard.waiting_buttons)
-    await state.update_data(post=post.id)
-    await show(target,
-               "🔗 <b>Link buttons</b> (optional)\n\nSend one button per line, up to "
-               f"{MAX_BUTTONS}:\n<code>Join the game - https://t.me/yourgroup</code>\n"
-               "<code>Buy now - https://shop.example.com</code>",
-               buttons_kb(post))
-
-
-@router.message(PostWizard.waiting_buttons, F.text)
-async def msg_buttons(message: Message, bot: Bot, ctx: AppContext, session: AsyncSession,
+@router.message(PostWizard.extras, F.text)
+async def msg_buttons(message: Message, ctx: AppContext, session: AsyncSession,
                       state: FSMContext) -> None:
     assert message.text is not None
-    data = await state.get_data()
-    post = await PostRepo(session, ctx.owner_id).get(int(data.get("post", 0)))
+    post = await _extras_post(message, ctx, session, state)
     if post is None:
-        await state.clear()
         return
     buttons, errors = parse_buttons(message.text, MAX_BUTTONS)
-    if errors and not buttons:
-        await message.answer("⚠️ " + "\n⚠️ ".join(html.escape(e) for e in errors),
-                             reply_markup=buttons_kb(post))
-        return
-    post.buttons = buttons
-    await session.flush()
+    if buttons:
+        post.buttons = (list(post.buttons) + buttons)[:MAX_BUTTONS]
+        await session.flush()
+    note = "✅ Buttons added.\n" if buttons else ""
     if errors:
-        await message.answer("ℹ️ " + "\n".join(html.escape(e) for e in errors))
-    await show_previews(message, bot, post, ctx, session, state, fresh=True)
+        note += "❗ " + "\n❗ ".join(html.escape(e) for e in errors) + "\n"
+    await show_extras(message, post, state, note + "\n" if note else "")
 
 
-@router.callback_query(PostCb.filter(F.action == "nobuttons"))
-async def cb_nobuttons(callback: CallbackQuery, callback_data: PostCb, bot: Bot,
-                       ctx: AppContext, session: AsyncSession, state: FSMContext) -> None:
+@router.message(PostWizard.extras)
+async def msg_extras_other(message: Message, ctx: AppContext, session: AsyncSession,
+                           state: FSMContext) -> None:
+    post = await _extras_post(message, ctx, session, state)
+    if post is not None:
+        await show_extras(message, post, state,
+                          "Send a photo, a video, or button lines like "
+                          "<code>Shop - https://example.com</code>.\n\n")
+
+
+@router.callback_query(PostCb.filter(F.action.in_({"nomedia", "nobuttons"})))
+async def cb_remove_extra(callback: CallbackQuery, callback_data: PostCb, ctx: AppContext,
+                          session: AsyncSession, state: FSMContext) -> None:
     post = await load_post(callback, session, ctx, callback_data.post)
     if post is None:
         return
-    post.buttons = []
+    if callback_data.action == "nomedia":
+        post.media_kind = post.media_file_id = None
+    else:
+        post.buttons = []
     await session.flush()
-    await callback.answer("Generating…")
+    await callback.answer("Removed")
+    await show_extras(callback, post, state)
+
+
+@router.callback_query(PostCb.filter(F.action == "create"))
+async def cb_create(callback: CallbackQuery, callback_data: PostCb, bot: Bot,
+                    ctx: AppContext, session: AsyncSession, state: FSMContext) -> None:
+    post = await load_post(callback, session, ctx, callback_data.post)
+    if post is None:
+        return
+    await callback.answer("Writing your post…")
     await show_previews(callback, bot, post, ctx, session, state, fresh=True)

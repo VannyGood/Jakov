@@ -12,7 +12,7 @@ from tests.conftest import ADMIN, FakeSession
 def service() -> UiEmojiService:
     library = EmojiLibrary(Catalog(PROJECT_ROOT / "data").moods, default_ui_pack="P")
     library.load([EmojiLibraryItem(custom_emoji_id="77", fallback="🔥", pack_name="P",
-                                   kind="animated", tags=[], is_active=True)])
+                                   kind="animated", tags=[], is_active=True, motion=500.0)])
     svc = UiEmojiService(library, {ADMIN})
     svc.dm_supported = True
     return svc

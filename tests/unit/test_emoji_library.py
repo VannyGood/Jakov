@@ -120,6 +120,8 @@ async def test_library_palette_and_ui_map(bot: Bot, fake_session: FakeSession,
     fake_session.on("GetStickerSet", lambda m: StickerSet(
         name=m.name, title="Base", sticker_type="custom_emoji", stickers=[st("50", "🔥")]))
     await import_pack(bot, session, OWNER, "Base")
+    for item in await EmojiRepo(session, OWNER).all():
+        item.motion = 300.0  # measured as clearly moving
     library = EmojiLibrary(MOODS, default_ui_pack="Base")
     library.load(await EmojiRepo(session, OWNER).all(active_only=True))
     assert library.size == 3 and library.packs() == ["Base", "DogsEmoji"]
@@ -130,3 +132,33 @@ async def test_library_palette_and_ui_map(bot: Bot, fake_session: FakeSession,
     await EmojiRepo(session, OWNER).set_pack_active("DogsEmoji", False)
     library.load(await EmojiRepo(session, OWNER).all(active_only=True))
     assert library.size == 1
+
+
+async def test_frozen_and_unmeasured_emoji_stay_out_of_menus(
+    bot: Bot, fake_session: FakeSession, session: AsyncSession
+) -> None:
+    pack(fake_session)
+    await import_pack(bot, session, OWNER, "DogsEmoji")
+    items = {i.custom_emoji_id: i for i in await EmojiRepo(session, OWNER).all()}
+    items["1"].motion = 0.0     # frozen 🔥
+    items["2"].motion = None    # 😂 not measured yet
+    library = EmojiLibrary(MOODS, ui_icons={"⚙️": "1", "🕒": "2"})
+    library.load(list(items.values()))
+    menu = library.ui_map(None)
+    assert "🔥" not in menu and "😂" not in menu and "⚙" not in menu and "🕒" not in menu
+    # Posts: frozen excluded, unmeasured still usable.
+    assert library.palette.candidates("fire") == []
+    assert [e.custom_emoji_id for e in library.palette.candidates("laugh")] == ["2"]
+
+
+async def test_retired_packs_cannot_be_imported(bot: Bot, session: AsyncSession) -> None:
+    with pytest.raises(EmojiImportError, match="blocked"):
+        await import_pack(bot, session, OWNER, "https://t.me/addemoji/TopicIcons")
+
+
+def test_retired_list_matches_config() -> None:
+    from jakov.services.emoji_library import RETIRED_LOWER
+
+    retired = Catalog(PROJECT_ROOT / "data").retired_packs
+    assert {r.lower() for r in retired} == RETIRED_LOWER
+    assert not set(retired) & set(Catalog(PROJECT_ROOT / "data").starter_packs)

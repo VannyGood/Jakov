@@ -35,6 +35,7 @@ from jakov.services.emoji_library import (
     import_pack,
     normalize_tag,
 )
+from jakov.services.emoji_motion import backfill_motion
 from jakov.services.starter import import_starter_packs
 from jakov.utils.telegram import show
 
@@ -54,9 +55,12 @@ def _sample_line(items: list[EmojiLibraryItem], animated: bool) -> str:
                    else html.escape(i.fallback) for i in items[:SAMPLE])
 
 
-async def _commit_reload(session: AsyncSession, ctx: AppContext) -> None:
+async def _commit_reload(session: AsyncSession, ctx: AppContext, bot: Bot | None = None
+                         ) -> None:
     await session.commit()
     await ctx.reload_emoji()
+    if bot is not None:  # new emoji: measure how alive they are in the background
+        ctx.spawn(backfill_motion(bot, ctx))
 
 
 # --- menu --------------------------------------------------------------------
@@ -70,9 +74,8 @@ async def _menu_text(session: AsyncSession, ctx: AppContext) -> str:
         "😀 <b>Emoji library</b>\n\n"
         f"Active emoji: <b>{ctx.library.size}</b> in {sum(p.active for p in packs)} packs\n"
         f"Top moods: {html.escape(top)}\n\n"
-        "Posts pick emoji by mood (<code>{emoji:fire}</code>, <code>{emoji:money}</code>…).\n"
-        "Add more with <code>/emojipack https://t.me/addemoji/Name</code> or "
-        "<code>/addemoji mood</code>."
+        "Posts pick emoji by mood. Only emoji that really move are used; frozen ones are "
+        "skipped automatically."
     )
 
 
@@ -111,7 +114,7 @@ async def _render_packs(callback: CallbackQuery, ctx: AppContext, session: Async
             first = await repo.get(pack.first_id)
             if first and first.kind != "static":
                 icons[pack.first_id] = first.custom_emoji_id
-    await show(callback, f"{prefix}📦 <b>Packs</b> ({len(packs)})", packs_kb(packs, page, icons))
+    await show(callback, f"{prefix}🗂 <b>Packs</b> ({len(packs)})", packs_kb(packs, page, icons))
 
 
 async def _pack_of(repo: EmojiRepo, item_pk: int) -> PackInfo | None:
@@ -142,8 +145,8 @@ async def _render_pack(callback: CallbackQuery, ctx: AppContext, session: AsyncS
     menu_pack = user.ui_emoji_pack if user else None
     link = (f'\n<a href="https://t.me/addemoji/{html.escape(pack.name)}">Open in Telegram</a>'
             if pack.name else "")
-    text = (f"📦 <b>{html.escape(pack.title)}</b>{link}\n"
-            f"{pack.count} emoji · {'active' if pack.active else '⏸ disabled'}"
+    text = (f"🗂 <b>{html.escape(pack.title)}</b>{link}\n"
+            f"{pack.count} emoji · {'active' if pack.active else '💤 disabled'}"
             f"{' · 🎨 used for your menus' if pack.name and pack.name == menu_pack else ''}\n\n"
             f"{_sample_line(items, ctx.ui.dm_supported)}")
     await show(callback, text, pack_kb(pack, pack.name == menu_pack))
@@ -178,7 +181,7 @@ async def cb_pack_delete(callback: CallbackQuery, callback_data: EmojiCb, ctx: A
     if pack is None:
         await callback.answer("Pack not found.", show_alert=True)
         return
-    await show(callback, f"🗑 Remove <b>{html.escape(pack.title)}</b> ({pack.count} emoji) "
+    await show(callback, f"❌ Remove <b>{html.escape(pack.title)}</b> ({pack.count} emoji) "
                "from your library? You can import it again later.", confirm_pack_delete_kb(pack))
     await callback.answer()
 
@@ -193,7 +196,7 @@ async def cb_pack_delete_go(callback: CallbackQuery, callback_data: EmojiCb, ctx
         return
     removed = await repo.delete_pack(pack.name)
     await _commit_reload(session, ctx)
-    await _render_packs(callback, ctx, session, 0, f"🗑 Removed {removed} emoji.\n\n")
+    await _render_packs(callback, ctx, session, 0, f"❌ Removed {removed} emoji.\n\n")
     await callback.answer()
 
 
@@ -210,7 +213,7 @@ async def cb_moods(callback: CallbackQuery, callback_data: EmojiCb, ctx: AppCont
             found = ctx.library.palette.candidates(mood)
             if found:
                 icons[mood] = found[0].custom_emoji_id
-    await show(callback, f"🏷 <b>Moods</b> ({len(moods)})\nTap one to see its emoji.",
+    await show(callback, f"🎟 <b>Moods</b> ({len(moods)})\nTap one to see its emoji.",
                moods_kb(moods, callback_data.page, icons))
     await callback.answer()
 
@@ -226,7 +229,7 @@ async def cb_mood(callback: CallbackQuery, callback_data: EmojiCb, ctx: AppConte
     ids = [e.custom_emoji_id for e in ctx.library.palette.candidates(mood)]
     found = await EmojiRepo(session, ctx.owner_id).by_custom_ids(ids)
     items = [found[i] for i in ids if i in found]
-    text = (f"🏷 <b>{html.escape(mood)}</b>: {len(items)} emoji\n"
+    text = (f"🎟 <b>{html.escape(mood)}</b>: {len(items)} emoji\n"
             f"Use it in posts as <code>{{emoji:{html.escape(mood)}}}</code>\n\n"
             f"{_sample_line(items, ctx.ui.dm_supported)}")
     await show(callback, text, mood_items_kb(items, callback_data.value, callback_data.page,
@@ -241,7 +244,7 @@ async def _item_card(target: Message | CallbackQuery, item: EmojiLibraryItem,
              else html.escape(item.fallback))
     text = (f"{prefix}{shown}  <b>#{item.id}</b>\n"
             f"Pack: {html.escape(item.pack_title or item.pack_name or 'added by hand')}\n"
-            f"Kind: {item.kind}{'' if item.is_active else ' · ⏸ disabled'}\n"
+            f"Kind: {item.kind}{'' if item.is_active else ' · 💤 disabled'}\n"
             f"Your tags: {html.escape(', '.join(item.tags) or 'none')}\n"
             f"Automatic moods: {html.escape(', '.join(auto) or 'none')}")
     await show(target, text, item_kb(item))
@@ -263,7 +266,7 @@ async def cb_item(callback: CallbackQuery, callback_data: EmojiCb, ctx: AppConte
 async def cb_tag_add(callback: CallbackQuery, callback_data: EmojiCb, state: FSMContext) -> None:
     await state.set_state(EmojiStates.waiting_tag)
     await state.update_data(item=callback_data.pk)
-    await show(callback, "🏷 Send a tag (mood or topic), e.g. <code>fire</code>, "
+    await show(callback, "🎟 Send a tag (mood or topic), e.g. <code>fire</code>, "
                "<code>money</code>, <code>snoop</code>.", cancel_kb())
     await callback.answer()
 
@@ -302,7 +305,7 @@ async def cb_item_change(callback: CallbackQuery, callback_data: EmojiCb, ctx: A
         await repo.delete(item)
         await _commit_reload(session, ctx)
         await callback.answer("Deleted")
-        await show(callback, "🗑 Emoji removed from the library.\n\n" +
+        await show(callback, "❌ Emoji removed from the library.\n\n" +
                    await _menu_text(session, ctx), emoji_menu_kb())
         return
     if 0 <= callback_data.value < len(item.tags):
@@ -320,10 +323,10 @@ async def _do_import(message: Message, bot: Bot, ctx: AppContext, session: Async
         result = await import_pack(bot, session, ctx.owner_id, ref)
     except EmojiImportError as exc:
         await state.set_state(EmojiStates.waiting_pack)
-        await message.answer(f"⚠️ {html.escape(str(exc))}", reply_markup=cancel_kb())
+        await message.answer(f"❗ {html.escape(str(exc))}", reply_markup=cancel_kb())
         return
     await state.clear()
-    await _commit_reload(session, ctx)
+    await _commit_reload(session, ctx, bot)
     static = (f"\n(Skipped {result.skipped_static} static emoji; only animated ones are kept.)"
               if result.skipped_static else "")
     await message.answer(
@@ -338,14 +341,14 @@ async def cmd_emojipack(message: Message, command: CommandObject, bot: Bot, ctx:
         await _do_import(message, bot, ctx, session, state, command.args)
         return
     await state.set_state(EmojiStates.waiting_pack)
-    await message.answer("📦 Send an emoji pack link, e.g. "
+    await message.answer("🗂 Send an emoji pack link, e.g. "
                          "<code>https://t.me/addemoji/DogsEmoji</code>", reply_markup=cancel_kb())
 
 
 @router.callback_query(EmojiCb.filter(F.action == "import"))
 async def cb_import(callback: CallbackQuery, state: FSMContext) -> None:
     await state.set_state(EmojiStates.waiting_pack)
-    await show(callback, "📦 Send an emoji pack link, e.g. "
+    await show(callback, "🗂 Send an emoji pack link, e.g. "
                "<code>https://t.me/addemoji/DogsEmoji</code>", cancel_kb())
     await callback.answer()
 
@@ -361,7 +364,7 @@ async def msg_pack(message: Message, bot: Bot, ctx: AppContext, session: AsyncSe
 async def cb_starter(callback: CallbackQuery, bot: Bot, ctx: AppContext) -> None:
     await callback.answer("Importing… this takes a few seconds")
     total, failed = await import_starter_packs(bot, ctx)
-    note = f"\n⚠️ Couldn't load: {html.escape(', '.join(failed))}" if failed else ""
+    note = f"\n❗ Couldn't load: {html.escape(', '.join(failed))}" if failed else ""
     await show(callback, f"📥 Starter packs refreshed: {total} emoji.{note}", emoji_menu_kb())
 
 
@@ -378,16 +381,30 @@ async def cmd_addemoji(message: Message, command: CommandObject, state: FSMConte
                          f"<b>{html.escape(mood)}</b>.", reply_markup=cancel_kb())
 
 
+@router.callback_query(EmojiCb.filter(F.action == "addown"))
+async def cb_addown(callback: CallbackQuery, state: FSMContext) -> None:
+    await state.set_state(EmojiStates.waiting_custom)
+    await state.update_data(mood="")
+    await show(callback, "🎟 Send a message with your animated (premium) emoji.\n\n"
+               "Optionally start with a tag word so posts can find them, e.g. "
+               "<code>fire</code> followed by your emoji.", cancel_kb())
+    await callback.answer()
+
+
 @router.message(EmojiStates.waiting_custom)
 async def msg_custom(message: Message, bot: Bot, ctx: AppContext, session: AsyncSession,
                      state: FSMContext) -> None:
     mood = str((await state.get_data()).get("mood", "")) or None
+    if mood is None and message.text:
+        first = message.text.split(maxsplit=1)[0]
+        mood = normalize_tag(first) if first.isascii() and first.isalpha() else None
     try:
         new, tagged = await add_from_message(bot, session, ctx.owner_id, message, mood)
     except EmojiImportError as exc:
-        await message.answer(f"⚠️ {html.escape(str(exc))}", reply_markup=cancel_kb())
+        await message.answer(f"❗ {html.escape(str(exc))}", reply_markup=cancel_kb())
         return
     await state.clear()
-    await _commit_reload(session, ctx)
-    await message.answer(f"✅ {tagged} emoji tagged <b>{html.escape(mood or '')}</b> "
-                         f"({new} new in the library).", reply_markup=emoji_menu_kb())
+    await _commit_reload(session, ctx, bot)
+    tag_note = f" and tagged <b>{html.escape(mood)}</b>" if mood else ""
+    await message.answer(f"✅ Added {tagged} emoji{tag_note} ({new} new in the library).",
+                         reply_markup=emoji_menu_kb())

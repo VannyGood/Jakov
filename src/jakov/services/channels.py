@@ -137,7 +137,7 @@ async def handle_membership(
             log.warning("added_by_stranger", chat_id=tg_chat.id, actor_id=actor.id)
             return MembershipChange(
                 None,
-                f"⚠️ <b>{html.escape(actor.full_name)}</b> (id <code>{actor.id}</code>) added me "
+                f"❗ <b>{html.escape(actor.full_name)}</b> (id <code>{actor.id}</code>) added me "
                 f"to <b>{title}</b>. They are not a Jakov admin, so I left.",
                 leave=True,
             )
@@ -158,15 +158,15 @@ async def handle_membership(
     chat.rights_checked_at = utcnow()
 
     if not new.is_present:
-        return MembershipChange(chat, f"🚫 I was removed from <b>{title}</b>.")
+        return MembershipChange(chat, f"❌ I was removed from <b>{title}</b>.")
     if not old.is_present:
         return MembershipChange(chat, f"✅ I'm back in <b>{title}</b>.")
     lost = lost_rights(before, new)
     if before.is_admin and not new.is_admin:
-        return MembershipChange(chat, f"⚠️ I'm no longer an admin in <b>{title}</b>.")
+        return MembershipChange(chat, f"❗ I'm no longer an admin in <b>{title}</b>.")
     if lost:
         return MembershipChange(
-            chat, f"⚠️ I lost rights in <b>{title}</b>: {', '.join(lost)}."
+            chat, f"❗ I lost rights in <b>{title}</b>: {', '.join(lost)}."
         )
     if new.is_admin and not before.is_admin:
         return MembershipChange(chat, f"✅ I'm now an admin in <b>{title}</b>.")

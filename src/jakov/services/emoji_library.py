@@ -15,6 +15,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from jakov.db.models import EmojiLibraryItem
 from jakov.db.repositories.emoji import EmojiRepo
 from jakov.engine.emoji_render import EmojiPalette, LibEmoji, normalize_emoji
+from jakov.engine.html_emojify import Emojifier
+from jakov.engine.lottie_motion import ALIVE_THRESHOLD
 from jakov.logging_setup import get_logger
 
 log = get_logger(__name__)
@@ -23,6 +25,8 @@ _PACK_LINK_RE = re.compile(
     r"^(?:https?://)?(?:t\.me|telegram\.me)/(?:addemoji|addstickers)/([A-Za-z0-9_]+)/?$")
 _PACK_NAME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_]{0,63}$")
 MAX_TAGS = 12
+# Kept in sync with data/starter_packs.yaml "retired" (checked by a test).
+RETIRED_LOWER = frozenset({"adaptivepremium", "topicicons", "adaptivelines"})
 
 
 class EmojiImportError(ValueError):
@@ -66,6 +70,8 @@ class ImportResult:
 async def import_pack(bot: Bot, session: AsyncSession, owner_id: int, ref: str,
                       *, include_static: bool = False) -> ImportResult:
     name = parse_pack_ref(ref)
+    if name.lower() in RETIRED_LOWER:
+        raise EmojiImportError(f"“{name}” is blocked: its icons don't animate.")
     try:
         sticker_set = await bot.get_sticker_set(name)
     except TelegramBadRequest as exc:
@@ -166,6 +172,7 @@ class EmojiLibrary:
     base_packs: frozenset[str] = frozenset()
     palette: EmojiPalette = field(init=False)
     _ui_maps: dict[str | None, dict[str, str]] = field(default_factory=dict, init=False)
+    _post_emojifiers: dict[str | None, Emojifier] = field(default_factory=dict, init=False)
     _items: list[LibEmoji] = field(default_factory=list, init=False)
 
     def __post_init__(self) -> None:
@@ -175,12 +182,16 @@ class EmojiLibrary:
         base = EmojiPalette(self.moods)
         lib = [
             LibEmoji(i.custom_emoji_id, i.fallback, i.pack_name,
-                     frozenset({*i.tags, *base.auto_tags(i.fallback)}), i.kind != "static")
+                     frozenset({*i.tags, *base.auto_tags(i.fallback)}), i.kind != "static",
+                     alive=i.kind != "static" and (i.motion is None
+                                                   or i.motion >= ALIVE_THRESHOLD),
+                     motion=i.motion)
             for i in items if i.is_active
         ]
         self._items = lib
         self.palette = EmojiPalette(self.moods, lib, self.base_packs)
         self._ui_maps.clear()
+        self._post_emojifiers.clear()
 
     async def reload(self, sessions: async_sessionmaker[AsyncSession], owner_id: int) -> None:
         async with sessions() as session:
@@ -202,21 +213,43 @@ class EmojiLibrary:
         if pack in self._ui_maps:
             return self._ui_maps[pack]
         mapping: dict[str, str] = {}
-        curated = {normalize_emoji(k): v for k, v in self.ui_icons.items()}
+        # Hand-picked icons count only once measured as moving (and not from a retired pack).
+        alive_ids = {e.custom_emoji_id for e in self._items
+                     if e.motion is not None and e.motion >= ALIVE_THRESHOLD}
+        curated = {normalize_emoji(k): v for k, v in self.ui_icons.items() if v in alive_ids}
         if pack is None:
             mapping.update(curated)
+        # Menus only use emoji measured as clearly moving; livelier ones win.
+        lively = sorted((e for e in self._items if e.motion is not None
+                         and e.motion >= ALIVE_THRESHOLD),
+                        key=lambda e: -(e.motion or 0.0))
         for preferred in [p for p in (pack, self.default_ui_pack) if p]:
-            for e in self._items:
-                if e.pack == preferred and e.animated:
+            for e in lively:
+                if e.pack == preferred:
                     mapping.setdefault(normalize_emoji(e.fallback), e.custom_emoji_id)
             if preferred == pack:
                 for key, value in curated.items():
                     mapping.setdefault(key, value)
-        for e in self._items:
-            if e.animated:
-                mapping.setdefault(normalize_emoji(e.fallback), e.custom_emoji_id)
+        for e in lively:
+            mapping.setdefault(normalize_emoji(e.fallback), e.custom_emoji_id)
         self._ui_maps[pack] = mapping
         return mapping
+
+    def post_emojifier(self, style: str | None) -> Emojifier:
+        """Turns plain emoji in post text (e.g. written by the AI) into living animated ones:
+        the chosen style pack first, then expressive packs, base packs last; livelier wins."""
+        if style in self._post_emojifiers:
+            return self._post_emojifiers[style]
+
+        def rank(e: LibEmoji) -> tuple[int, int, float]:
+            return (0 if style and e.pack == style else 1,
+                    1 if e.pack in self.base_packs else 0, -(e.motion or 0.0))
+
+        mapping: dict[str, str] = {}
+        for e in sorted((e for e in self._items if e.alive), key=rank):
+            mapping.setdefault(normalize_emoji(e.fallback), e.custom_emoji_id)
+        self._post_emojifiers[style] = Emojifier(mapping)
+        return self._post_emojifiers[style]
 
     def sample(self, fallback: str, pack: str | None = None) -> str | None:
         return self.ui_map(pack).get(normalize_emoji(fallback))

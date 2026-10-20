@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import asyncio
+from collections.abc import Coroutine
 from dataclasses import dataclass, field
 from time import monotonic
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -31,6 +33,7 @@ class AppContext:
     generator: TextGenerator
     queue: SendQueue = field(default_factory=SendQueue)
     scheduler: Scheduler | None = None
+    background: set[asyncio.Task[Any]] = field(default_factory=set)
     started_at: float = field(default_factory=monotonic)
     updates_handled: int = 0
 
@@ -45,6 +48,12 @@ class AppContext:
     def is_admin(self, user_id: int | None) -> bool:
         return user_id is not None and user_id in self.admin_ids
 
+    def spawn(self, coro: Coroutine[Any, Any, Any]) -> None:
+        """Run a background job, keeping a reference so it isn't garbage-collected."""
+        task = asyncio.create_task(coro)
+        self.background.add(task)
+        task.add_done_callback(self.background.discard)
+
     async def reload_emoji(self) -> None:
         """Call after committing library or UI-preference changes."""
         await self.library.reload(self.sessions, self.owner_id)
@@ -53,6 +62,8 @@ class AppContext:
 
 def build_context(settings: Settings, sessions: async_sessionmaker[AsyncSession]) -> AppContext:
     from jakov.engine.text_generator import TemplateGenerator
+    from jakov.services.llm.ollama import OllamaClient
+    from jakov.services.llm_generator import LlmGenerator
 
     catalog = Catalog(settings.data_dir)
     # Fail fast on broken data files.
@@ -67,5 +78,8 @@ def build_context(settings: Settings, sessions: async_sessionmaker[AsyncSession]
         catalog=catalog,
         library=library,
         ui=UiEmojiService(library, set(settings.admin_ids)),
-        generator=TemplateGenerator(catalog),
+        generator=LlmGenerator(
+            OllamaClient(settings.ollama_url, settings.ollama_model, settings.llm_timeout_s),
+            catalog, temperature=settings.llm_temperature)
+        if settings.llm_enabled else TemplateGenerator(catalog),
     )

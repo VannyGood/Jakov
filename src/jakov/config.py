@@ -41,6 +41,13 @@ class Settings(BaseSettings):
     emoji_test_pack: str = "RestrictedEmoji"
     health_log_interval_s: int = 600
 
+    # Local AI writer (Ollama). Templates are the automatic backup when it's unavailable.
+    llm_enabled: bool = True
+    ollama_url: str = "http://localhost:11434"
+    ollama_model: str = "gemma3:1b"
+    llm_timeout_s: float = Field(default=45.0, ge=5.0, le=600.0)
+    llm_temperature: float = Field(default=0.9, ge=0.0, le=2.0)
+
     # Scheduler
     scheduler_tick_seconds: float = Field(default=5.0, ge=1.0, le=60.0)
     # A run more than this many minutes late (e.g. bot was offline) is skipped and logged.

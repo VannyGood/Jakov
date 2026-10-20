@@ -134,12 +134,17 @@ class Catalog:
     @cached_property
     def _starter(self) -> dict[str, list[str]]:
         raw = self._yaml(self.data_dir / "starter_packs.yaml")
-        return {k: [str(p) for p in raw.get(k) or []] for k in ("showcase", "base")}
+        return {k: [str(p) for p in raw.get(k) or []] for k in ("showcase", "base", "retired")}
 
     @cached_property
     def starter_packs(self) -> list[str]:
         """All packs imported automatically: base packs first."""
         return self._starter["base"] + self._starter["showcase"]
+
+    @cached_property
+    def retired_packs(self) -> list[str]:
+        """Packs to remove from the library and never import again."""
+        return self._starter["retired"]
 
     @cached_property
     def base_packs(self) -> list[str]:

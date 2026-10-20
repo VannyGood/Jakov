@@ -21,7 +21,8 @@ ADMIN = OWNER
 TOKEN = "123456789:AAFakeTokenForTestsOnly_abcdefghijklmn"
 
 # Settings must never read the developer's real .env during tests.
-os.environ.update({"BOT_TOKEN": TOKEN, "ADMIN_IDS": str(ADMIN), "TIMEZONE": "UTC"})
+os.environ.update({"BOT_TOKEN": TOKEN, "ADMIN_IDS": str(ADMIN), "TIMEZONE": "UTC",
+                   "LLM_ENABLED": "false"})  # tests never call a real model
 
 
 @pytest.fixture

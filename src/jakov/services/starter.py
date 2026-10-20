@@ -14,6 +14,7 @@ from jakov.db.repositories.emoji import EmojiRepo
 from jakov.db.repositories.state import StateRepo
 from jakov.logging_setup import get_logger
 from jakov.services.emoji_library import EmojiImportError, import_pack
+from jakov.services.emoji_motion import backfill_motion
 from jakov.services.notifier import notify_admins
 
 log = get_logger(__name__)
@@ -41,7 +42,30 @@ async def import_starter_packs(bot: Bot, ctx: AppContext, names: list[str] | Non
     return total, failed
 
 
+async def retire_packs(ctx: AppContext) -> int:
+    """Delete retired packs from the library. Returns how many emoji were removed."""
+    removed = 0
+    async with ctx.sessions() as session:
+        repo = EmojiRepo(session, ctx.owner_id)
+        present = {p.name.lower(): p.name for p in await repo.packs()}
+        for name in ctx.catalog.retired_packs:
+            if name.lower() in present:
+                removed += await repo.delete_pack(present[name.lower()])
+        await session.commit()
+    if removed:
+        log.info("retired_packs_removed", emoji=removed)
+        await ctx.reload_emoji()
+    return removed
+
+
 async def ensure_starter_library(bot: Bot, ctx: AppContext) -> None:
+    """Retire, import missing starter packs, then measure motion of new emoji."""
+    await retire_packs(ctx)
+    await _import_missing(bot, ctx)
+    await backfill_motion(bot, ctx)
+
+
+async def _import_missing(bot: Bot, ctx: AppContext) -> None:
     async with ctx.sessions() as session:
         state = StateRepo(session, ctx.owner_id)
         done: list[str] | None = await state.get(STATE_KEY)
@@ -60,5 +84,5 @@ async def ensure_starter_library(bot: Bot, ctx: AppContext) -> None:
     text = (f"😀 I added <b>{total}</b> animated emoji from "
             f"{len(missing) - len(failed)} new pack(s) to your library.")
     if failed:
-        text += f"\n⚠️ Couldn't load: {html.escape(', '.join(failed))}"
+        text += f"\n❗ Couldn't load: {html.escape(', '.join(failed))}"
     await notify_admins(bot, ctx.admin_ids, text)

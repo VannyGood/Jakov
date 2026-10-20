@@ -13,31 +13,31 @@ from jakov.keyboards.common import cancel_button
 from jakov.services.timezones import COMMON_ZONES
 
 ZONES_PER_PAGE = 10
-SHARE_LOCATION_TEXT = "📍 Send my location"
+SHARE_LOCATION_TEXT = "🧭 Send my location"
 CANCEL_TEXT = "✖️ Cancel"
 
 
 def settings_kb(ui_animated: bool = True, custom_pack: bool = False) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
-    kb.button(text="🕒 Timezone", callback_data=SettingsCb(action="tz"))
+    kb.button(text="⏰ Timezone", callback_data=SettingsCb(action="tz"))
     kb.button(text=f"🎨 Animated menus: {'On' if ui_animated else 'Off'}",
               callback_data=SettingsCb(action="ui_toggle"))
     if custom_pack:
-        kb.button(text="✨ Back to Premium menu icons",
-                  callback_data=SettingsCb(action="ui_premium"))
-    kb.button(text="📦 Menu style from a pack", callback_data=EmojiCb(action="packs"))
+        kb.button(text="✨ Back to the default menu icons",
+                  callback_data=SettingsCb(action="ui_premium"), style="primary")
+    kb.button(text="😀 Emoji library", callback_data=EmojiCb(action="menu"))
     kb.button(text="🧪 Custom emoji test", callback_data=SettingsCb(action="emoji_test"))
-    kb.button(text="⬅️ Back", callback_data=MenuCb(to="main"))
+    kb.button(text="🏠 Menu", callback_data=MenuCb(to="main"))
     kb.adjust(1)
     return kb.as_markup()
 
 
 def timezone_kb() -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
-    kb.button(text="📍 Use my location", callback_data=SettingsCb(action="tz_loc"))
+    kb.button(text="🧭 Use my location", callback_data=SettingsCb(action="tz_loc"))
     kb.button(text="🌍 Pick from list", callback_data=SettingsCb(action="tz_list", value=0))
     kb.button(text="⌨️ Type a timezone", callback_data=SettingsCb(action="tz_type"))
-    kb.button(text="⬅️ Back", callback_data=MenuCb(to="settings"))
+    kb.button(text="👈 Back", callback_data=MenuCb(to="settings"))
     kb.adjust(1)
     return kb.as_markup()
 
@@ -64,7 +64,7 @@ def zone_list_kb(page: int) -> InlineKeyboardMarkup:
     if nav:
         rows.append(nav)
     rows.append([InlineKeyboardButton(
-        text="⬅️ Back", callback_data=SettingsCb(action="tz").pack())])
+        text="👈 Back", callback_data=SettingsCb(action="tz").pack())])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 

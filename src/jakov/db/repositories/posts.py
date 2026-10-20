@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from jakov.db.models import Chat, Post, PublishedPost
@@ -32,6 +32,12 @@ class PublishedRepo:
     async def get(self, pk: int) -> PublishedPost | None:
         return await self.session.scalar(select(PublishedPost).where(
             PublishedPost.id == pk, PublishedPost.owner_id == self.owner_id))
+
+    async def count(self) -> int:
+        return int(await self.session.scalar(
+            select(func.count()).select_from(PublishedPost).where(
+                PublishedPost.owner_id == self.owner_id,
+                PublishedPost.deleted_at.is_(None))) or 0)
 
     async def recent(self, offset: int, limit: int) -> list[tuple[PublishedPost, Chat | None]]:
         rows = await self.session.execute(

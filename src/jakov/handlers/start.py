@@ -36,7 +36,7 @@ async def run_private_emoji_probe(bot: Bot, ctx: AppContext, session: AsyncSessi
         result = await ctx.emoji_probe.probe(bot, chat_id, "✨ Custom emoji test:")
     except TelegramAPIError as exc:
         log.warning("emoji_probe_failed", error=type(exc).__name__)
-        return "⚠️ I couldn't run the custom emoji test right now. Try again in /settings."
+        return "❗ I couldn't run the custom emoji test right now. Try again in /settings."
     await CapabilityRepo(session, ctx.owner_id).set(CAP_PRIVATE, result.supported, result.detail)
     await session.commit()
     await ctx.ui.load(ctx.sessions, ctx.owner_id)
@@ -44,7 +44,7 @@ async def run_private_emoji_probe(bot: Bot, ctx: AppContext, session: AsyncSessi
     if result.supported:
         return ("✅ <b>Animated custom emoji work.</b> If you see an animated emoji above, "
                 "posts can use them.")
-    return ("⚠️ <b>Custom emoji are not available for this bot.</b>\n"
+    return ("❗ <b>Custom emoji are not available for this bot.</b>\n"
             f"Telegram said: {html.escape(result.detail)}\n"
             "I'll use normal emoji automatically. Bots can send custom emoji only when the bot "
             "owner has Telegram Premium (Bot API 9.4+).")
@@ -76,9 +76,9 @@ async def cmd_start(message: Message, bot: Bot, ctx: AppContext, session: AsyncS
     )
     if user.timezone is None:
         kb = InlineKeyboardBuilder()
-        kb.button(text="🕒 Set my timezone", callback_data=SettingsCb(action="tz"))
+        kb.button(text="⏰ Set my timezone", callback_data=SettingsCb(action="tz"))
         await message.answer(
-            f"🕒 I'm using the default timezone <b>{html.escape(ctx.settings.timezone)}</b>. "
+            f"⏰ I'm using the default timezone <b>{html.escape(ctx.settings.timezone)}</b>. "
             "Share your location so schedules use your local time.",
             reply_markup=kb.as_markup(),
         )

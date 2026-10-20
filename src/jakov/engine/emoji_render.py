@@ -31,6 +31,9 @@ class LibEmoji:
     pack: str | None = None
     tags: frozenset[str] = frozenset()
     animated: bool = True
+    # False when measured as frozen; unknown (not yet measured) counts as alive.
+    alive: bool = True
+    motion: float | None = None
 
 
 @dataclass(slots=True)
@@ -45,6 +48,8 @@ class EmojiPalette:
 
     def __post_init__(self) -> None:
         for emoji in self.emojis:
+            if not emoji.alive:
+                continue  # frozen emoji are never used
             for tag in emoji.tags:
                 self._by_mood.setdefault(tag, []).append(emoji)
 

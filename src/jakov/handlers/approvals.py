@@ -28,14 +28,14 @@ async def cb_approve(callback: CallbackQuery, callback_data: ApCb, ctx: AppConte
     assert ctx.scheduler is not None
     await callback.answer("Posting…")
     ok, message = await ctx.scheduler.approve(callback_data.pk)
-    await show(callback, f"{'✅' if ok else '⚠️'} {html.escape(message)}")
+    await show(callback, f"{'✅' if ok else '❗'} {html.escape(message)}")
 
 
 @router.callback_query(ApCb.filter(F.action == "skip"))
 async def cb_skip(callback: CallbackQuery, callback_data: ApCb, ctx: AppContext) -> None:
     assert ctx.scheduler is not None
     skipped = await ctx.scheduler.skip(callback_data.pk)
-    await show(callback, "⏭ Skipped. The schedule continues with the next run." if skipped
+    await show(callback, "👉 Skipped. The schedule continues with the next run." if skipped
                else "This request was already handled.")
     await callback.answer()
 
@@ -57,6 +57,6 @@ async def msg_edit(message: Message, ctx: AppContext, state: FSMContext) -> None
     request_id = int((await state.get_data()).get("request", 0))
     error = await ctx.scheduler.update_approval_text(request_id, message.html_text)
     if error:
-        await message.answer(f"⚠️ {html.escape(error)}", reply_markup=cancel_kb())
+        await message.answer(f"❗ {html.escape(error)}", reply_markup=cancel_kb())
         return
     await state.clear()

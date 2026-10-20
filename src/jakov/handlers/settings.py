@@ -50,13 +50,20 @@ async def _settings_text(session: AsyncSession, ctx: AppContext, user_id: int) -
     source = "your setting" if personal else "default from config"
     menu_pack = (user.ui_emoji_pack if user else None) or "✨ Premium icons"
     animated = user.ui_animated if user else True
+    writer = "built-in templates"
+    if ctx.settings.llm_enabled:
+        is_up = getattr(ctx.generator, "is_available", None)
+        online = bool(is_up and await is_up())
+        writer = (f"AI · {html.escape(ctx.settings.ollama_model)} "
+                  f"{'✅ online' if online else '❗ offline (templates in use)'}")
     return (
-        "⚙️ <b>Settings</b>\n\n"
-        f"🕒 Timezone: <b>{html.escape(zone)}</b> ({source})\n"
+        "🧰 <b>Settings</b>\n\n"
+        f"⏰ Timezone: <b>{html.escape(zone)}</b> ({source})\n"
         f"    Local time now: {now_local}\n"
         f"✨ Custom emoji in DMs: {emoji_status(cap)}\n"
         f"🎨 Animated menus: <b>{'on' if animated else 'off'}</b> · style "
-        f"<b>{html.escape(menu_pack)}</b>"
+        f"<b>{html.escape(menu_pack)}</b>\n"
+        f"🧠 Post writer: <b>{writer}</b>"
     )
 
 
@@ -96,7 +103,7 @@ async def cb_tz(callback: CallbackQuery, ctx: AppContext, session: AsyncSession,
     zone, _ = await zone_for(session, ctx, callback.from_user.id)
     await show(
         callback,
-        f"🕒 <b>Timezone</b>: {html.escape(zone)}\n\n"
+        f"⏰ <b>Timezone</b>: {html.escape(zone)}\n\n"
         "All times are stored in UTC and shown in this timezone. Telegram doesn't tell bots "
         "where you are, so pick how to set it:",
         timezone_kb(),
@@ -135,7 +142,7 @@ async def msg_tz_typed(message: Message, ctx: AppContext, session: AsyncSession,
     assert message.from_user is not None and message.text is not None
     zone = normalize_zone(message.text)
     if zone is None:
-        await message.answer("⚠️ I don't know that timezone. Try a name like "
+        await message.answer("❗ I don't know that timezone. Try a name like "
                              "<code>Europe/Berlin</code>.", reply_markup=type_zone_kb())
         return
     await state.clear()
@@ -150,7 +157,7 @@ async def cb_tz_location(callback: CallbackQuery, bot: Bot, state: FSMContext) -
     # Location requests only work on reply keyboards, so this needs a new message.
     await bot.send_message(
         callback.from_user.id,
-        "📍 Tap the button below to share your location. I only use it once, offline, to find "
+        "🧭 Tap the button below to share your location. I only use it once, offline, to find "
         "your timezone. The coordinates are not stored.\n"
         "(Location sharing works in the Telegram mobile apps.)",
         reply_markup=location_request_kb(),
@@ -164,7 +171,7 @@ async def msg_location(message: Message, ctx: AppContext, session: AsyncSession,
     zone = await zone_from_location(message.location.latitude, message.location.longitude)
     await state.clear()
     if zone is None:
-        await message.answer("⚠️ I couldn't find a timezone for that spot (open sea?). "
+        await message.answer("❗ I couldn't find a timezone for that spot (open sea?). "
                              "Pick one from the list instead.", reply_markup=ReplyKeyboardRemove())
         await message.answer("🌍 Pick your timezone:", reply_markup=zone_list_kb(0))
         return
@@ -176,7 +183,7 @@ async def msg_location(message: Message, ctx: AppContext, session: AsyncSession,
 
 @router.message(SettingsStates.waiting_location)
 async def msg_location_other(message: Message) -> None:
-    await message.answer("Tap “📍 Send my location” below, or “✖️ Cancel”.",
+    await message.answer("Tap “🧭 Send my location” below, or “✖️ Cancel”.",
                          reply_markup=location_request_kb())
 
 

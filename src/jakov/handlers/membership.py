@@ -30,7 +30,7 @@ async def on_my_chat_member(event: ChatMemberUpdated, bot: Bot, ctx: AppContext,
         paused = await ctx.scheduler.pause_for_chat(
             session, change.chat.id, "I lost access or posting rights in this chat.")
         if paused and change.message:
-            change.message += f"\n⏸ Paused {paused} schedule(s) for this chat."
+            change.message += f"\n💤 Paused {paused} schedule(s) for this chat."
     log.info("my_chat_member", chat_id=event.chat.id,
              old=status_value(event.old_chat_member.status),
              new=status_value(event.new_chat_member.status))
@@ -59,5 +59,5 @@ async def on_group_migrated(message: Message, bot: Bot, ctx: AppContext,
     log.info("chat_migrated", old=message.chat.id, new=message.migrate_to_chat_id)
     await notify_admins(
         bot, ctx.admin_ids,
-        f"ℹ️ <b>{html.escape(chat.name)}</b> was upgraded to a supergroup; I updated its ID.",
+        f"💡 <b>{html.escape(chat.name)}</b> was upgraded to a supergroup; I updated its ID.",
     )

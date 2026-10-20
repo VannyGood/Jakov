@@ -74,6 +74,9 @@ class PostVariation(OwnedMixin, TimestampMixin, Base):
     resolved: Mapped[str] = mapped_column(Text)
     is_custom: Mapped[bool] = mapped_column(Boolean, default=False)
     emoji_seed: Mapped[int] = mapped_column(BigInteger, default=0)
+    # Who wrote it: "llm" (AI writer, rewritten fresh on scheduled sends), "template", "custom".
+    source: Mapped[str] = mapped_column(String(12), default="template",
+                                        server_default="template")
 
     post: Mapped[Post] = relationship(back_populates="variations")
 

@@ -1,30 +1,26 @@
 from __future__ import annotations
 
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from jakov.keyboards.callbacks import CancelCb, MenuCb
+from jakov.keyboards.ui import btn, kb
 
 
 def cancel_button() -> InlineKeyboardButton:
-    return InlineKeyboardButton(text="✖️ Cancel", callback_data=CancelCb().pack())
+    return btn("✖️ Cancel", CancelCb(), "danger")
 
 
 def cancel_kb() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(inline_keyboard=[[cancel_button()]])
+    return kb(cancel_button())
 
 
-def back_button(to: str = "main", text: str = "⬅️ Back") -> InlineKeyboardButton:
-    return InlineKeyboardButton(text=text, callback_data=MenuCb(to=to).pack())
+def back_button(to: str = "main", text: str = "👈 Back") -> InlineKeyboardButton:
+    return btn(text, MenuCb(to=to))
 
 
 def main_menu_kb() -> InlineKeyboardMarkup:
-    kb = InlineKeyboardBuilder()
-    kb.button(text="✍️ New post", callback_data=MenuCb(to="newpost"))
-    kb.button(text="🗓 Schedules", callback_data=MenuCb(to="schedules"))
-    kb.button(text="📰 Published", callback_data=MenuCb(to="published"))
-    kb.button(text="😀 Emoji library", callback_data=MenuCb(to="emoji"))
-    kb.button(text="📡 Channels", callback_data=MenuCb(to="channels"))
-    kb.button(text="⚙️ Settings", callback_data=MenuCb(to="settings"))
-    kb.adjust(1, 2, 2, 1)
-    return kb.as_markup()
+    return kb(
+        btn("✍️ Create a post", MenuCb(to="newpost"), "primary"),
+        [btn("📆 Schedules", MenuCb(to="schedules")), btn("📰 Posts", MenuCb(to="published"))],
+        [btn("📣 Channels", MenuCb(to="channels")), btn("🧰 Settings", MenuCb(to="settings"))],
+    )

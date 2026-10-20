@@ -18,9 +18,13 @@ showcase:
   - JustWhiteCatEmoji
   - GameIcons
   - MovieIcons
-  - TopicIcons
   - StatusEmoji
   - TStarsIcons
-  - AdaptivePremium
 base:
   - RestrictedEmoji
+# Packs removed from Jakov: deleted from the library on start and never imported again.
+# (Their icons don't move or are single-colour outlines.)
+retired:
+  - AdaptivePremium
+  - TopicIcons
+  - AdaptiveLines

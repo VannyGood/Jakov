@@ -23,7 +23,7 @@ async def on_error(event: ErrorEvent, bot: Bot, ctx: AppContext) -> bool:
     detail = redactor.redact(f"{type(exc).__name__}: {exc}")[:500]
     await notify_admins(
         bot, ctx.admin_ids,
-        f"⚠️ Something went wrong while handling an update.\n<code>{html.escape(detail)}</code>\n"
+        f"❗ Something went wrong while handling an update.\n<code>{html.escape(detail)}</code>\n"
         "The bot keeps running; details are in the log.",
     )
     return True

@@ -20,8 +20,7 @@ MAX_BUTTONS = 6
 
 class PostWizard(StatesGroup):
     answering = State()
-    waiting_media = State()
-    waiting_buttons = State()
+    extras = State()
     reviewing = State()
     editing_text = State()
 
