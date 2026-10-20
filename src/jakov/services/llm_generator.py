@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import random
 from time import monotonic
 
@@ -66,9 +65,10 @@ class LlmGenerator:
             layouts = list(llm_writer.LAYOUTS)
             self.rng.shuffle(styles)
             self.rng.shuffle(layouts)
-            results = await asyncio.gather(*(
-                self._one(request, styles[i % len(styles)], layouts[i % len(layouts)])
-                for i in range(count)))
+            # One at a time: a CPU-only server queues parallel requests anyway, and
+            # sequential calls keep each one well inside the timeout.
+            results = [await self._one(request, styles[i % len(styles)],
+                                       layouts[i % len(layouts)]) for i in range(count)]
             written = [GeneratedText(t, "llm") for t in results if t and t not in exclude]
         missing = count - len(written)
         if missing > 0:  # AI offline or some outputs rejected: templates fill the gap

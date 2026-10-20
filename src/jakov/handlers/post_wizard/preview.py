@@ -69,8 +69,23 @@ async def _clear_previews(bot: Bot, chat_id: int, state: FSMContext) -> None:
     await state.update_data(previews=[])
 
 
+_busy: set[int] = set()  # posts currently being written (ignore double taps)
+
+
 async def show_previews(target: Message | CallbackQuery, bot: Bot, post: Post, ctx: AppContext,
                         session: AsyncSession, state: FSMContext, *, fresh: bool) -> None:
+    if post.id in _busy:
+        return  # a double tap while the AI is still writing
+    _busy.add(post.id)
+    try:
+        await _show_previews(target, bot, post, ctx, session, state, fresh=fresh)
+    finally:
+        _busy.discard(post.id)
+
+
+async def _show_previews(target: Message | CallbackQuery, bot: Bot, post: Post,
+                         ctx: AppContext, session: AsyncSession, state: FSMContext, *,
+                         fresh: bool) -> None:
     chat_id = _user_id(target)
     if fresh:
         with contextlib.suppress(TelegramAPIError):
